@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PROMAD · Sistema de Gestão</title>
+<link rel="stylesheet" href="css/PROMAD_Admin.css">
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sb-brand">
+    <div class="sb-logo">PROMAD</div>
+    <div class="sb-sub">Sistema de Gestão</div>
+  </div>
+  <span class="sb-sec">Principal</span>
+  <div class="sbi on" onclick="nav('dashboard')"><span>▦</span><span>Dashboard</span></div>
+  <span class="sb-sec">Cadastros</span>
+  <div class="sbi" onclick="nav('aprendizes')"><span>👤</span><span>Aprendizes</span><span class="sb-cnt" id="c-ap">0</span></div>
+  <div class="sbi" onclick="nav('empresas')"><span>🏢</span><span>Empresas</span><span class="sb-cnt" id="c-em">0</span></div>
+  <span class="sb-sec">Gestão</span>
+  <div class="sbi" onclick="nav('contratos')"><span>📋</span><span>Contratos</span><span class="sb-cnt" id="c-ct">0</span></div>
+  <div class="sbi" onclick="nav('uniformes')"><span>👕</span><span>Uniformes</span></div>
+  <div class="sbi" onclick="nav('ferias')"><span>🏖️</span><span>Férias</span></div>
+  <div class="sbi" onclick="nav('licencas')"><span>🏥</span><span>Lic. Médica</span></div>
+  <div class="sb-foot">PROMAD · Juiz de Fora – MG<br>v1.0 · 2024</div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <span class="tcrumb">PROMAD › <strong id="tp-pg">Dashboard</strong></span>
+    <span class="tbadge" id="tp-bd">Visão Geral</span>
+  </div>
+  <div id="global-alrt" class="alrt" style="margin:12px 26px 0"></div>
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div class="page on" id="pg-dashboard">
+      <div class="ph"><h1>Dashboard</h1><p>Visão geral do programa</p></div>
+      <div class="krow">
+        <div class="kpi g"><div class="kl">Aprendizes Ativos</div><div class="kv" id="kv-at">0</div><div class="ks">vínculo ativo</div></div>
+        <div class="kpi go"><div class="kl">Empresas Parceiras</div><div class="kv" id="kv-em">0</div><div class="ks">convênios registrados</div></div>
+        <div class="kpi am"><div class="kl">Pendentes</div><div class="kv" id="kv-pe">0</div><div class="ks">aguardando cadastro</div></div>
+        <div class="kpi gr"><div class="kl">Contratos</div><div class="kv" id="kv-ct">0</div><div class="ks">histórico total</div></div>
+      </div>
+      <div class="dg">
+        <div class="card">
+          <div class="chd"><span class="cttl">Aprendizes recentes</span><button class="btn btn-s btn-sm" onclick="nav('aprendizes')">Ver todos</button></div>
+          <table><thead><tr><th>Aprendiz</th><th>Matrícula</th><th>Empresa</th><th>Status</th></tr></thead>
+          <tbody id="dash-ap"><tr><td colspan="4"><div class="empty"><div class="ei">📋</div><p>Nenhum aprendiz cadastrado.</p></div></td></tr></tbody></table>
+        </div>
+        <div class="card">
+          <div class="chd"><span class="cttl">Atividade recente</span></div>
+          <div class="cbp" id="dash-log"><div class="empty"><div class="ei">🕐</div><p>Nenhuma atividade.</p></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- APRENDIZES -->
+    <div class="page" id="pg-aprendizes">
+      <div class="ph"><h1>Aprendizes</h1><p>Cadastro e gestão de jovens aprendizes</p></div>
+      <div class="tb">
+        <div class="sw"><span class="si">🔍</span><input id="q-ap" placeholder="Buscar por nome ou matrícula…" oninput="rAp()"></div>
+        <button class="btn btn-p" onclick="oAp()">＋ Novo Aprendiz</button>
+      </div>
+      <div class="fps">
+        <div class="pill on" onclick="sp(this,'ap','todos')">Todos</div>
+        <div class="pill" onclick="sp(this,'ap','Ativo')">Ativos</div>
+        <div class="pill" onclick="sp(this,'ap','Pendente')">Pendentes</div>
+        <div class="pill" onclick="sp(this,'ap','Inativo')">Inativos</div>
+      </div>
+      <div class="card"><table><thead><tr><th>Aprendiz</th><th>Mat.</th><th>Insc.</th><th>Dt.Nasc.</th><th>Modalidade</th><th>Escolaridade</th><th>Turno</th><th>Empresa</th><th>Status</th><th></th></tr></thead><tbody id="tb-ap"></tbody></table></div>
+    </div>
+
+    <!-- EMPRESAS -->
+    <div class="page" id="pg-empresas">
+      <div class="ph"><h1>Empresas</h1><p>Parceiras do programa de aprendizagem</p></div>
+      <div class="tb">
+        <div class="sw"><span class="si">🔍</span><input id="q-em" placeholder="Buscar por nome ou CNPJ…" oninput="rEm()"></div>
+        <button class="btn btn-p" onclick="oEm()">＋ Nova Empresa</button>
+      </div>
+      <div class="card"><table><thead><tr><th>Empresa</th><th>Responsável</th><th>Telefone</th><th>Endereço</th><th>Aprendizes</th><th></th></tr></thead><tbody id="tb-em"></tbody></table></div>
+    </div>
+
+    <!-- CONTRATOS -->
+    <div class="page" id="pg-contratos">
+      <div class="ph"><h1>Contratos</h1><p>Registros de contratos de aprendizagem</p></div>
+      <div class="tb">
+        <div class="sw"><span class="si">🔍</span><input id="q-ct" placeholder="Buscar por aprendiz ou empresa…" oninput="rCt()"></div>
+        <button class="btn btn-p" onclick="abrirCt()">＋ Novo Contrato</button>
+      </div>
+      <div class="fps">
+        <div class="pill on" onclick="sp(this,'ct','todos')">Todos</div>
+        <div class="pill" onclick="sp(this,'ct','Vigente')">Vigentes</div>
+        <div class="pill" onclick="sp(this,'ct','Encerrado')">Encerrados</div>
+      </div>
+      <div class="card"><table><thead><tr><th>Aprendiz</th><th>Empresa</th><th>Início</th><th>Término</th><th>Horário</th><th>Intervalo</th><th>Salário</th><th>C.H.</th><th>Status</th><th></th></tr></thead><tbody id="tb-ct"></tbody></table></div>
+    </div>
+
+    <!-- UNIFORMES -->
+    <div class="page" id="pg-uniformes">
+      <div class="ph"><h1>Uniformes</h1><p>Controle de entrega de uniformes</p></div>
+      <div class="tb">
+        <div class="sw"><span class="si">🔍</span><input id="q-un" placeholder="Buscar aprendiz…" oninput="rUn()"></div>
+        <button class="btn btn-p" onclick="oUn()">＋ Registrar Entrega</button>
+      </div>
+      <div class="card"><table><thead><tr><th>Aprendiz</th><th>Data</th><th>Quantidade</th><th>Assinatura</th><th></th></tr></thead><tbody id="tb-un"></tbody></table></div>
+    </div>
+
+    <!-- FÉRIAS -->
+    <div class="page" id="pg-ferias">
+      <div class="ph"><h1>Previsão de Férias</h1><p>Controle de férias dos aprendizes</p></div>
+      <div class="tb">
+        <div class="sw"><span class="si">🔍</span><input id="q-fe" placeholder="Buscar aprendiz…" oninput="rFe()"></div>
+        <button class="btn btn-p" onclick="oFe()">＋ Registrar Férias</button>
+      </div>
+      <div class="card"><table><thead><tr><th>Aprendiz</th><th>Empresa</th><th>Período Início</th><th>Período Fim</th><th>Observação</th><th></th></tr></thead><tbody id="tb-fe"></tbody></table></div>
+    </div>
+
+    <!-- LICENÇAS -->
+    <div class="page" id="pg-licencas">
+      <div class="ph"><h1>Licenças Médicas</h1><p>Registro de afastamentos por saúde</p></div>
+      <div class="tb">
+        <div class="sw"><span class="si">🔍</span><input id="q-li" placeholder="Buscar aprendiz…" oninput="rLi()"></div>
+        <button class="btn btn-p" onclick="oLi()">＋ Registrar Licença</button>
+      </div>
+      <div class="card"><table><thead><tr><th>Aprendiz</th><th>Período Início</th><th>Período Fim</th><th>Motivo</th><th></th></tr></thead><tbody id="tb-li"></tbody></table></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL APRENDIZ -->
+<div class="ov" id="ov-ap" onclick="ovc(event,'ov-ap')">
+<div class="modal">
+  <div class="mhd"><span class="mttl" id="ap-tt">Cadastrar Aprendiz</span><button class="mcl" onclick="cov('ov-ap')">✕</button></div>
+  <div class="mbdy">
+    <div class="fsec">Identificação</div>
+    <div class="fg">
+      <div class="fld ff"><label>Nome do Aprendiz<span class="req">*</span></label><input id="a-nom" placeholder="Nome completo"></div>
+      <div class="fld"><label>Matrícula</label><input id="a-mat" placeholder="Ex: 2024001"></div>
+      <div class="fld"><label>Inscrição</label><input id="a-ins" placeholder="Nº de inscrição"></div>
+      <div class="fld"><label>Data de Nascimento</label><input type="date" id="a-nas"></div>
+      <div class="fld"><label>Modalidade de Convênio</label><input id="a-mod" placeholder="SENAI, SENAC…"></div>
+      <div class="fld"><label>Escolaridade</label><select id="a-esc"><option value="">Selecione</option><option>Fund. – cursando</option><option>Fund. – completo</option><option>Médio – cursando</option><option>Médio – completo</option><option>Superior – cursando</option></select></div>
+      <div class="fld"><label>Turno</label><select id="a-tur"><option value="">Selecione</option><option>Manhã</option><option>Tarde</option><option>Noite</option><option>Integral</option></select></div>
+      <div class="fld"><label>Status</label><select id="a-sta"><option>Ativo</option><option>Pendente</option><option>Inativo</option></select></div>
+    </div>
+    <div class="fsec">Endereço e Contatos</div>
+    <div class="fg">
+      <div class="fld ff"><label>Endereço</label><input id="a-end" placeholder="Rua, Avenida…"></div>
+      <div class="fld"><label>Número</label><input id="a-num" placeholder="Nº"></div>
+      <div class="fld"><label>Bairro</label><input id="a-bai" placeholder="Bairro"></div>
+      <div class="fld"><label>Tel. Residencial</label><input id="a-tre" placeholder="(32) 0000-0000"></div>
+      <div class="fld"><label>Celular</label><input id="a-cel" placeholder="(32) 90000-0000"></div>
+      <div class="fld"><label>Tel. Trab./Resp.</label><input id="a-ttr" placeholder="(32) 0000-0000"></div>
+      <div class="fld"><label>Outros contatos</label><input id="a-out" placeholder="E-mail, WhatsApp…"></div>
+    </div>
+    <div class="fsec">Responsável</div>
+    <div class="fg">
+      <div class="fld ff"><label>Nome do Responsável</label><input id="a-res" placeholder="Nome completo do responsável"></div>
+      <div class="fld"><label>Parentesco</label><input id="a-par" placeholder="Mãe, Pai, Avó…"></div>
+    </div>
+    <div class="fsec">Curso / Formação</div>
+    <div class="fg3">
+      <div class="fld"><label>Curso – Início</label><input type="date" id="a-cni"></div>
+      <div class="fld"><label>Curso – Término</label><input type="date" id="a-cnf"></div>
+      <div class="fld"><label>Turma</label><input id="a-trm" placeholder="Turma A"></div>
+    </div>
+    <div class="fsec">Empresa Contratante</div>
+    <div class="fg"><div class="fld"><label>Empresa</label><select id="a-emp"><option value="">Selecione</option></select></div></div>
+    <div class="fsec">Observações</div>
+    <div class="fld"><label>Observações</label><textarea id="a-obs" placeholder="Informações adicionais…"></textarea></div>
+  </div>
+  <div class="mft"><button class="btn btn-s" onclick="cov('ov-ap')">Cancelar</button><button class="btn btn-p" onclick="sAp()">Salvar</button></div>
+</div></div>
+
+<!-- MODAL EMPRESA -->
+<div class="ov" id="ov-em" onclick="ovc(event,'ov-em')">
+<div class="modal">
+  <div class="mhd"><span class="mttl" id="em-tt">Cadastrar Empresa</span><button class="mcl" onclick="cov('ov-em')">✕</button></div>
+  <div class="mbdy">
+    <div class="fsec">Dados da Empresa</div>
+    <div class="fg">
+      <div class="fld ff"><label>Nome / Razão Social<span class="req">*</span></label><input id="e-nom" placeholder="Nome da empresa"></div>
+      <div class="fld"><label>CNPJ</label><input id="e-cnj" placeholder="00.000.000/0000-00"></div>
+      <div class="fld"><label>Responsável</label><input id="e-res" placeholder="Nome do responsável"></div>
+      <div class="fld ff"><label>Endereço</label><input id="e-end" placeholder="Rua, Avenida…"></div>
+      <div class="fld"><label>Número</label><input id="e-num" placeholder="Nº"></div>
+      <div class="fld"><label>Bairro</label><input id="e-bai" placeholder="Bairro"></div>
+      <div class="fld"><label>Telefone</label><input id="e-tel" placeholder="(32) 0000-0000"></div>
+      <div class="fld"><label>E-mail</label><input type="email" id="e-eml" placeholder="contato@empresa.com"></div>
+      <div class="fld ff"><label>Observações</label><textarea id="e-obs" placeholder="Informações adicionais…"></textarea></div>
+    </div>
+  </div>
+  <div class="mft"><button class="btn btn-s" onclick="cov('ov-em')">Cancelar</button><button class="btn btn-p" onclick="sEm()">Salvar</button></div>
+</div></div>
+
+<!-- MODAL CONTRATO -->
+<div class="ov" id="ov-ct" onclick="ovc(event,'ov-ct')">
+<div class="modal">
+  <div class="mhd"><span class="mttl" id="ct-tt">Registrar Contrato</span><button class="mcl" onclick="cov('ov-ct')">✕</button></div>
+  <div class="mbdy">
+    <div class="fsec">Partes</div>
+    <div class="fg">
+      <div class="fld"><label>Aprendiz<span class="req">*</span></label><select id="c-ap"></select></div>
+      <div class="fld"><label>Empresa<span class="req">*</span></label><select id="c-em"></select></div>
+    </div>
+    <div class="fsec">Período e Condições</div>
+    <div class="fg3">
+      <div class="fld"><label>Início</label><input type="date" id="c-ini"></div>
+      <div class="fld"><label>Término</label><input type="date" id="c-fim"></div>
+      <div class="fld"><label>Status</label><select id="c-sta"><option>Vigente</option><option>Encerrado</option></select></div>
+      <div class="fld"><label>Horário</label><input id="c-hor" placeholder="08:00–14:00"></div>
+      <div class="fld"><label>Intervalo</label><input id="c-int" placeholder="30 min"></div>
+      <div class="fld"><label>C.H. (h/sem)</label><input type="number" id="c-ch" placeholder="20"></div>
+    </div>
+    <div class="fg"><div class="fld"><label>Salário (R$)</label><input type="number" id="c-sal" step="0.01" placeholder="0,00"></div></div>
+    <div class="fsec">Alterações no Contrato</div>
+    <div class="fld"><label>Observações / Alterações</label><textarea id="c-obs" placeholder="Prorrogações, ajustes, aditivos…"></textarea></div>
+  </div>
+  <div class="mft"><button class="btn btn-s" onclick="cov('ov-ct')">Cancelar</button><button class="btn btn-p" onclick="sCt()">Salvar</button></div>
+</div></div>
+
+<!-- MODAL UNIFORME -->
+<div class="ov" id="ov-un" onclick="ovc(event,'ov-un')">
+<div class="modal modal-sm">
+  <div class="mhd"><span class="mttl">Registrar Uniforme</span><button class="mcl" onclick="cov('ov-un')">✕</button></div>
+  <div class="mbdy">
+    <div class="fg">
+      <div class="fld ff"><label>Aprendiz<span class="req">*</span></label><select id="u-ap"></select></div>
+      <div class="fld"><label>Data</label><input type="date" id="u-dat"></div>
+      <div class="fld"><label>Quantidade</label><input type="number" id="u-qtd" placeholder="Ex: 2" min="1"></div>
+      <div class="fld ff"><label>Assinatura / Observação</label><input id="u-ass" placeholder="Nome ou observação"></div>
+    </div>
+  </div>
+  <div class="mft"><button class="btn btn-s" onclick="cov('ov-un')">Cancelar</button><button class="btn btn-p" onclick="sUn()">Salvar</button></div>
+</div></div>
+
+<!-- MODAL FÉRIAS -->
+<div class="ov" id="ov-fe" onclick="ovc(event,'ov-fe')">
+<div class="modal modal-sm">
+  <div class="mhd"><span class="mttl">Registrar Férias</span><button class="mcl" onclick="cov('ov-fe')">✕</button></div>
+  <div class="mbdy">
+    <div class="fg">
+      <div class="fld ff"><label>Aprendiz<span class="req">*</span></label><select id="f-ap"></select></div>
+      <div class="fld"><label>Período – Início</label><input type="date" id="f-ini"></div>
+      <div class="fld"><label>Período – Fim</label><input type="date" id="f-fim"></div>
+      <div class="fld ff"><label>Observação</label><textarea id="f-obs" placeholder="Previsão de férias, recesso…"></textarea></div>
+    </div>
+  </div>
+  <div class="mft"><button class="btn btn-s" onclick="cov('ov-fe')">Cancelar</button><button class="btn btn-p" onclick="sFe()">Salvar</button></div>
+</div></div>
+
+<!-- MODAL LICENÇA -->
+<div class="ov" id="ov-li" onclick="ovc(event,'ov-li')">
+<div class="modal modal-sm">
+  <div class="mhd"><span class="mttl">Registrar Licença Médica</span><button class="mcl" onclick="cov('ov-li')">✕</button></div>
+  <div class="mbdy">
+    <div class="fg">
+      <div class="fld ff"><label>Aprendiz<span class="req">*</span></label><select id="l-ap"></select></div>
+      <div class="fld"><label>Período – Início</label><input type="date" id="l-ini"></div>
+      <div class="fld"><label>Período – Fim</label><input type="date" id="l-fim"></div>
+      <div class="fld ff"><label>Motivo</label><textarea id="l-mot" placeholder="Descreva o motivo do afastamento…"></textarea></div>
+    </div>
+  </div>
+  <div class="mft"><button class="btn btn-s" onclick="cov('ov-li')">Cancelar</button><button class="btn btn-p" onclick="sLi()">Salvar</button></div>
+</div></div>
+
+<!-- DRAWER FICHA -->
+<div class="dov" id="dov" onclick="cdov()">
+  <div class="drawer" onclick="event.stopPropagation()">
+    <div class="dhd"><h2 id="dr-ttl">Ficha do Aprendiz</h2><button class="dcl" onclick="cdov()">✕</button></div>
+    <div class="dbdy" id="dr-bdy"></div>
+    <div class="dft"><button class="btn btn-s" onclick="cdov()">Fechar</button><button class="btn btn-p" onclick="efd()">✏ Editar</button></div>
+  </div>
+</div>
+
+<script src="js/PROMAD_Admin.js"></script>
+</body>
+</html>
