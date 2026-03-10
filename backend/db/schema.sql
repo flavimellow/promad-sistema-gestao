@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS empresas (
   nom        VARCHAR(200) NOT NULL,
   cnj        VARCHAR(20),
   res        VARCHAR(150),
-  end        VARCHAR(200),
+  logr       VARCHAR(200),
   num        VARCHAR(20),
   bai        VARCHAR(100),
   tel        VARCHAR(30),
@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS aprendizes (
   tur        VARCHAR(50),
   sta        VARCHAR(20) DEFAULT 'Ativo' CHECK (sta IN ('Ativo','Pendente','Inativo')),
   -- Endereço
-  end        VARCHAR(200),
+  logr       VARCHAR(200),
   num        VARCHAR(20),
   bai        VARCHAR(100),
   -- Contatos

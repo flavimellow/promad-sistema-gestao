@@ -30,9 +30,9 @@ router.post('/', async (req, res) => {
   try {
     const f = req.body;
     const { rows } = await pool.query(
-      `INSERT INTO empresas (nom,cnj,res,end,num,bai,tel,eml,obs)
+      `INSERT INTO empresas (nom,cnj,res,logr,num,bai,tel,eml,obs)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
-      [f.nom,f.cnj||null,f.res||null,f.end||null,f.num||null,f.bai||null,f.tel||null,f.eml||null,f.obs||null]
+      [f.nom,f.cnj||null,f.res||null,f.logr||null,f.num||null,f.bai||null,f.tel||null,f.eml||null,f.obs||null]
     );
     res.status(201).json(rows[0]);
   } catch (err) { res.status(500).json({ erro: 'Erro ao criar empresa.' }); }
@@ -42,9 +42,9 @@ router.put('/:id', async (req, res) => {
   try {
     const f = req.body;
     const { rows } = await pool.query(
-      `UPDATE empresas SET nom=$1,cnj=$2,res=$3,end=$4,num=$5,bai=$6,tel=$7,eml=$8,obs=$9
+      `UPDATE empresas SET nom=$1,cnj=$2,res=$3,logr=$4,num=$5,bai=$6,tel=$7,eml=$8,obs=$9
        WHERE id=$10 RETURNING *`,
-      [f.nom,f.cnj||null,f.res||null,f.end||null,f.num||null,f.bai||null,f.tel||null,f.eml||null,f.obs||null,req.params.id]
+      [f.nom,f.cnj||null,f.res||null,f.logr||null,f.num||null,f.bai||null,f.tel||null,f.eml||null,f.obs||null,req.params.id]
     );
     if (!rows.length) return res.status(404).json({ erro: 'Não encontrado.' });
     res.json(rows[0]);

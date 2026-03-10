@@ -180,7 +180,7 @@ async function sAp() {
   const body = {
     nom, mat:gv('a-mat'), ins:gv('a-ins'), nas:gv('a-nas')||null,
     mod:gv('a-mod'), esc:gv('a-esc'), tur:gv('a-tur'), sta:gv('a-sta'),
-    end:gv('a-end'), num:gv('a-num'), bai:gv('a-bai'), tre:gv('a-tre'),
+    logr:gv('a-logr'), num:gv('a-num'), bai:gv('a-bai'), tre:gv('a-tre'),
     cel:gv('a-cel'), ttr:gv('a-ttr'), out:gv('a-out'), res:gv('a-res'),
     par:gv('a-par'), cni:gv('a-cni')||null, cnf:gv('a-cnf')||null,
     trm:gv('a-trm'), emp:gv('a-emp')||null, obs:gv('a-obs'),
@@ -259,7 +259,7 @@ async function oEm(id) {
 async function sEm() {
   const nom = gv('e-nom');
   if (!nom) { showAlrt('Informe o nome da empresa.', 'er'); return; }
-  const body = { nom, cnj:gv('e-cnj'), res:gv('e-res'), end:gv('e-end'), num:gv('e-num'), bai:gv('e-bai'), tel:gv('e-tel'), eml:gv('e-eml'), obs:gv('e-obs') };
+  const body = { nom, cnj:gv('e-cnj'), res:gv('e-res'), logr:gv('e-logr'), num:gv('e-num'), bai:gv('e-bai'), tel:gv('e-tel'), eml:gv('e-eml'), obs:gv('e-obs') };
   try {
     if (eid.em) {
       await PUT('/empresas/' + eid.em, body);
@@ -290,7 +290,7 @@ async function rEm() {
         <td><strong>${e.nom}</strong><br><span style="font-family:monospace;font-size:.73rem;color:var(--mu)">${e.cnj || ''}</span></td>
         <td>${e.res || '—'}</td>
         <td>${e.tel || '—'}</td>
-        <td>${[e.end, e.num, e.bai].filter(Boolean).join(', ') || '—'}</td>
+        <td>${[e.logr, e.num, e.bai].filter(Boolean).join(', ') || '—'}</td>
         <td><span class="badge ba">${c} aprendiz${c !== 1 ? 'es' : ''}</span></td>
         <td><div class="ag">
           <button class="btn btn-s btn-sm btn-ic" onclick="oEm(${e.id})">✏</button>
@@ -541,7 +541,7 @@ async function oDr(id) {
       <div class="ds">
         <div class="dst">Contatos e Endereço</div>
         <div class="dg2">
-          <div class="di full"><label>Endereço</label><span>${[a.end,a.num,a.bai].filter(Boolean).join(', ') || '—'}</span></div>
+          <div class="di full"><label>Endereço</label><span>${[a.logr,a.num,a.bai].filter(Boolean).join(', ') || '—'}</span></div>
           <div class="di"><label>Tel. Residencial</label><span>${a.tre || '—'}</span></div>
           <div class="di"><label>Celular</label><span>${a.cel || '—'}</span></div>
           <div class="di"><label>Tel. Trab./Resp.</label><span>${a.ttr || '—'}</span></div>

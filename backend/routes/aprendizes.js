@@ -57,11 +57,11 @@ router.post('/', async (req, res) => {
     const f = req.body;
     const { rows } = await pool.query(
       `INSERT INTO aprendizes
-        (nom,mat,ins,nas,mod,esc,tur,sta,end,num,bai,tre,cel,ttr,out,res,par,cni,cnf,trm,emp,obs)
+        (nom,mat,ins,nas,mod,esc,tur,sta,logr,num,bai,tre,cel,ttr,out,res,par,cni,cnf,trm,emp,obs)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
        RETURNING *`,
       [f.nom,f.mat||null,f.ins||null,f.nas||null,f.mod||null,f.esc||null,f.tur||null,
-       f.sta||'Ativo',f.end||null,f.num||null,f.bai||null,f.tre||null,f.cel||null,
+       f.sta||'Ativo',f.logr||null,f.num||null,f.bai||null,f.tre||null,f.cel||null,
        f.ttr||null,f.out||null,f.res||null,f.par||null,f.cni||null,f.cnf||null,
        f.trm||null,f.emp||null,f.obs||null]
     );
@@ -79,11 +79,11 @@ router.put('/:id', async (req, res) => {
     const { rows } = await pool.query(
       `UPDATE aprendizes SET
         nom=$1,mat=$2,ins=$3,nas=$4,mod=$5,esc=$6,tur=$7,sta=$8,
-        end=$9,num=$10,bai=$11,tre=$12,cel=$13,ttr=$14,out=$15,
+        logr=$9,num=$10,bai=$11,tre=$12,cel=$13,ttr=$14,out=$15,
         res=$16,par=$17,cni=$18,cnf=$19,trm=$20,emp=$21,obs=$22
        WHERE id=$23 RETURNING *`,
       [f.nom,f.mat||null,f.ins||null,f.nas||null,f.mod||null,f.esc||null,f.tur||null,
-       f.sta||'Ativo',f.end||null,f.num||null,f.bai||null,f.tre||null,f.cel||null,
+       f.sta||'Ativo',f.logr||null,f.num||null,f.bai||null,f.tre||null,f.cel||null,
        f.ttr||null,f.out||null,f.res||null,f.par||null,f.cni||null,f.cnf||null,
        f.trm||null,f.emp||null,f.obs||null,req.params.id]
     );
