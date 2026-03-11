@@ -16,14 +16,14 @@
   <span class="sb-sec">Principal</span>
   <div class="sbi on" onclick="nav('dashboard')"><span>▦</span><span>Dashboard</span></div>
   <span class="sb-sec">Cadastros</span>
-  <div class="sbi" onclick="nav('aprendizes')"><span>👤</span><span>Aprendizes</span><span class="sb-cnt" id="c-ap">0</span></div>
-  <div class="sbi" onclick="nav('empresas')"><span>🏢</span><span>Empresas</span><span class="sb-cnt" id="c-em">0</span></div>
+  <div class="sbi" onclick="nav('aprendizes')"><span>👤</span><span>Aprendizes</span><span class="sb-cnt" id="sb-ap">0</span></div>
+  <div class="sbi" onclick="nav('empresas')"><span>🏢</span><span>Empresas</span><span class="sb-cnt" id="sb-em">0</span></div>
   <span class="sb-sec">Gestão</span>
-  <div class="sbi" onclick="nav('contratos')"><span>📋</span><span>Contratos</span><span class="sb-cnt" id="c-ct">0</span></div>
+  <div class="sbi" onclick="nav('contratos')"><span>📋</span><span>Contratos</span><span class="sb-cnt" id="sb-ct">0</span></div>
   <div class="sbi" onclick="nav('uniformes')"><span>👕</span><span>Uniformes</span></div>
   <div class="sbi" onclick="nav('ferias')"><span>🏖️</span><span>Férias</span></div>
   <div class="sbi" onclick="nav('licencas')"><span>🏥</span><span>Lic. Médica</span></div>
-  <div class="sb-foot">PROMAD · Juiz de Fora – MG<br>v1.0 · 2024</div>
+  <div class="sb-foot">PROMAD · Juiz de Fora – MG<br>v1.0 · 2025</div>
 </aside>
 
 <div class="main">
@@ -140,7 +140,8 @@
       <div class="fld ff"><label>Nome do Aprendiz<span class="req">*</span></label><input id="a-nom" placeholder="Nome completo"></div>
       <div class="fld"><label>Matrícula</label><input id="a-mat" placeholder="Ex: 2024001"></div>
       <div class="fld"><label>Inscrição</label><input id="a-ins" placeholder="Nº de inscrição"></div>
-      <div class="fld"><label>Data de Nascimento</label><input type="date" id="a-nas"></div>
+      <div class="fld"><label>CPF</label><input id="a-cpf" placeholder="000.000.000-00" maxlength="14" oninput="msk(this,'cpf')"></div>
+      <div class="fld"><label>Data de Nascimento</label><input id="a-nas" placeholder="dd/mm/aaaa" maxlength="10" oninput="msk(this,'data')"></div>
       <div class="fld"><label>Modalidade de Convênio</label><input id="a-mod" placeholder="SENAI, SENAC…"></div>
       <div class="fld"><label>Escolaridade</label><select id="a-esc"><option value="">Selecione</option><option>Fund. – cursando</option><option>Fund. – completo</option><option>Médio – cursando</option><option>Médio – completo</option><option>Superior – cursando</option></select></div>
       <div class="fld"><label>Turno</label><select id="a-tur"><option value="">Selecione</option><option>Manhã</option><option>Tarde</option><option>Noite</option><option>Integral</option></select></div>
@@ -151,20 +152,22 @@
       <div class="fld ff"><label>Endereço</label><input id="a-logr" placeholder="Rua, Avenida…"></div>
       <div class="fld"><label>Número</label><input id="a-num" placeholder="Nº"></div>
       <div class="fld"><label>Bairro</label><input id="a-bai" placeholder="Bairro"></div>
-      <div class="fld"><label>Tel. Residencial</label><input id="a-tre" placeholder="(32) 0000-0000"></div>
-      <div class="fld"><label>Celular</label><input id="a-cel" placeholder="(32) 90000-0000"></div>
-      <div class="fld"><label>Tel. Trab./Resp.</label><input id="a-ttr" placeholder="(32) 0000-0000"></div>
+      <div class="fld"><label>CEP</label><input id="a-cep" placeholder="00000-000" maxlength="9" oninput="msk(this,'cep')"></div>
+      <div class="fld"><label>Tel. Residencial</label><input id="a-tre" placeholder="(32) 0000-0000" maxlength="15" oninput="msk(this,'tel')"></div>
+      <div class="fld"><label>Celular</label><input id="a-cel" placeholder="(32) 90000-0000" maxlength="15" oninput="msk(this,'tel')"></div>
+      <div class="fld"><label>Tel. Trab./Resp.</label><input id="a-ttr" placeholder="(32) 0000-0000" maxlength="15" oninput="msk(this,'tel')"></div>
       <div class="fld"><label>Outros contatos</label><input id="a-out" placeholder="E-mail, WhatsApp…"></div>
     </div>
     <div class="fsec">Responsável</div>
     <div class="fg">
       <div class="fld ff"><label>Nome do Responsável</label><input id="a-res" placeholder="Nome completo do responsável"></div>
       <div class="fld"><label>Parentesco</label><input id="a-par" placeholder="Mãe, Pai, Avó…"></div>
+      <div class="fld"><label>CPF do Responsável</label><input id="a-cpr" placeholder="000.000.000-00" maxlength="14" oninput="msk(this,'cpf')"></div>
     </div>
     <div class="fsec">Curso / Formação</div>
     <div class="fg3">
-      <div class="fld"><label>Curso – Início</label><input type="date" id="a-cni"></div>
-      <div class="fld"><label>Curso – Término</label><input type="date" id="a-cnf"></div>
+      <div class="fld"><label>Curso – Início</label><input id="a-cni" placeholder="dd/mm/aaaa" maxlength="10" oninput="msk(this,'data')"></div>
+      <div class="fld"><label>Curso – Término</label><input id="a-cnf" placeholder="dd/mm/aaaa" maxlength="10" oninput="msk(this,'data')"></div>
       <div class="fld"><label>Turma</label><input id="a-trm" placeholder="Turma A"></div>
     </div>
     <div class="fsec">Empresa Contratante</div>
@@ -183,12 +186,13 @@
     <div class="fsec">Dados da Empresa</div>
     <div class="fg">
       <div class="fld ff"><label>Nome / Razão Social<span class="req">*</span></label><input id="e-nom" placeholder="Nome da empresa"></div>
-      <div class="fld"><label>CNPJ</label><input id="e-cnj" placeholder="00.000.000/0000-00"></div>
+      <div class="fld"><label>CNPJ</label><input id="e-cnj" placeholder="00.000.000/0000-00" maxlength="18" oninput="msk(this,'cnpj')"></div>
       <div class="fld"><label>Responsável</label><input id="e-res" placeholder="Nome do responsável"></div>
       <div class="fld ff"><label>Endereço</label><input id="e-logr" placeholder="Rua, Avenida…"></div>
       <div class="fld"><label>Número</label><input id="e-num" placeholder="Nº"></div>
       <div class="fld"><label>Bairro</label><input id="e-bai" placeholder="Bairro"></div>
-      <div class="fld"><label>Telefone</label><input id="e-tel" placeholder="(32) 0000-0000"></div>
+      <div class="fld"><label>CEP</label><input id="e-cep" placeholder="00000-000" maxlength="9" oninput="msk(this,'cep')"></div>
+      <div class="fld"><label>Telefone</label><input id="e-tel" placeholder="(32) 0000-0000" maxlength="15" oninput="msk(this,'tel')"></div>
       <div class="fld"><label>E-mail</label><input type="email" id="e-eml" placeholder="contato@empresa.com"></div>
       <div class="fld ff"><label>Observações</label><textarea id="e-obs" placeholder="Informações adicionais…"></textarea></div>
     </div>
@@ -203,21 +207,21 @@
   <div class="mbdy">
     <div class="fsec">Partes</div>
     <div class="fg">
-      <div class="fld"><label>Aprendiz<span class="req">*</span></label><select id="c-ap"></select></div>
-      <div class="fld"><label>Empresa<span class="req">*</span></label><select id="c-em"></select></div>
+      <div class="fld"><label>Aprendiz<span class="req">*</span></label><select id="ct-ap"><option value="">Selecione o aprendiz</option></select></div>
+      <div class="fld"><label>Empresa<span class="req">*</span></label><select id="ct-em"><option value="">Selecione a empresa</option></select></div>
     </div>
     <div class="fsec">Período e Condições</div>
     <div class="fg3">
-      <div class="fld"><label>Início</label><input type="date" id="c-ini"></div>
-      <div class="fld"><label>Término</label><input type="date" id="c-fim"></div>
-      <div class="fld"><label>Status</label><select id="c-sta"><option>Vigente</option><option>Encerrado</option></select></div>
-      <div class="fld"><label>Horário</label><input id="c-hor" placeholder="08:00–14:00"></div>
-      <div class="fld"><label>Intervalo</label><input id="c-int" placeholder="30 min"></div>
-      <div class="fld"><label>C.H. (h/sem)</label><input type="number" id="c-ch" placeholder="20"></div>
+      <div class="fld"><label>Início</label><input id="ct-ini" placeholder="dd/mm/aaaa" maxlength="10" oninput="msk(this,'data')"></div>
+      <div class="fld"><label>Término</label><input id="ct-fim" placeholder="dd/mm/aaaa" maxlength="10" oninput="msk(this,'data')"></div>
+      <div class="fld"><label>Status</label><select id="ct-sta"><option>Vigente</option><option>Encerrado</option></select></div>
+      <div class="fld"><label>Horário</label><input id="ct-hor" placeholder="08:00–14:00"></div>
+      <div class="fld"><label>Intervalo</label><input id="ct-int" placeholder="30 min"></div>
+      <div class="fld"><label>C.H. (h/sem)</label><input type="number" id="ct-ch" placeholder="20"></div>
     </div>
-    <div class="fg"><div class="fld"><label>Salário (R$)</label><input type="number" id="c-sal" step="0.01" placeholder="0,00"></div></div>
+    <div class="fg"><div class="fld"><label>Salário (R$)</label><input id="ct-sal" placeholder="0,00" oninput="msk(this,'valor')"></div></div>
     <div class="fsec">Alterações no Contrato</div>
-    <div class="fld"><label>Observações / Alterações</label><textarea id="c-obs" placeholder="Prorrogações, ajustes, aditivos…"></textarea></div>
+    <div class="fld"><label>Observações / Alterações</label><textarea id="ct-obs" placeholder="Prorrogações, ajustes, aditivos…"></textarea></div>
   </div>
   <div class="mft"><button class="btn btn-s" onclick="cov('ov-ct')">Cancelar</button><button class="btn btn-p" onclick="sCt()">Salvar</button></div>
 </div></div>
@@ -229,7 +233,7 @@
   <div class="mbdy">
     <div class="fg">
       <div class="fld ff"><label>Aprendiz<span class="req">*</span></label><select id="u-ap"></select></div>
-      <div class="fld"><label>Data</label><input type="date" id="u-dat"></div>
+      <div class="fld"><label>Data</label><input id="u-dat" placeholder="dd/mm/aaaa" maxlength="10" oninput="msk(this,'data')"></div>
       <div class="fld"><label>Quantidade</label><input type="number" id="u-qtd" placeholder="Ex: 2" min="1"></div>
       <div class="fld ff"><label>Assinatura / Observação</label><input id="u-ass" placeholder="Nome ou observação"></div>
     </div>
@@ -244,8 +248,8 @@
   <div class="mbdy">
     <div class="fg">
       <div class="fld ff"><label>Aprendiz<span class="req">*</span></label><select id="f-ap"></select></div>
-      <div class="fld"><label>Período – Início</label><input type="date" id="f-ini"></div>
-      <div class="fld"><label>Período – Fim</label><input type="date" id="f-fim"></div>
+      <div class="fld"><label>Período – Início</label><input id="f-ini" placeholder="dd/mm/aaaa" maxlength="10" oninput="msk(this,'data')"></div>
+      <div class="fld"><label>Período – Fim</label><input id="f-fim" placeholder="dd/mm/aaaa" maxlength="10" oninput="msk(this,'data')"></div>
       <div class="fld ff"><label>Observação</label><textarea id="f-obs" placeholder="Previsão de férias, recesso…"></textarea></div>
     </div>
   </div>
@@ -259,8 +263,8 @@
   <div class="mbdy">
     <div class="fg">
       <div class="fld ff"><label>Aprendiz<span class="req">*</span></label><select id="l-ap"></select></div>
-      <div class="fld"><label>Período – Início</label><input type="date" id="l-ini"></div>
-      <div class="fld"><label>Período – Fim</label><input type="date" id="l-fim"></div>
+      <div class="fld"><label>Período – Início</label><input id="l-ini" placeholder="dd/mm/aaaa" maxlength="10" oninput="msk(this,'data')"></div>
+      <div class="fld"><label>Período – Fim</label><input id="l-fim" placeholder="dd/mm/aaaa" maxlength="10" oninput="msk(this,'data')"></div>
       <div class="fld ff"><label>Motivo</label><textarea id="l-mot" placeholder="Descreva o motivo do afastamento…"></textarea></div>
     </div>
   </div>

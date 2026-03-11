@@ -7,11 +7,60 @@
 const API = '/api';
 
 /* ════════════════════════════
-   UTILITÁRIOS
+   MÁSCARAS
 ════════════════════════════ */
-const fd  = d => d ? d.slice(0,10).split('-').reverse().join('/') : '—';
-const fm  = v => v ? 'R$ ' + parseFloat(v).toFixed(2).replace('.', ',') : '—';
-const bc  = s => ({ Ativo:'ba', Inativo:'bi', Pendente:'bp', Encerrado:'be', Vigente:'bv' }[s] || 'bi');
+function msk(el, tipo) {
+  let v = el.value.replace(/\D/g, '');
+  switch (tipo) {
+    case 'cpf':
+      v = v.slice(0,11);
+      v = v.replace(/(\d{3})(\d)/, '$1.$2')
+           .replace(/(\d{3})(\d)/, '$1.$2')
+           .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+      break;
+    case 'cnpj':
+      v = v.slice(0,14);
+      v = v.replace(/(\d{2})(\d)/, '$1.$2')
+           .replace(/(\d{3})(\d)/, '$1.$2')
+           .replace(/(\d{3})(\d)/, '$1/$2')
+           .replace(/(\d{4})(\d{1,2})$/, '$1-$2');
+      break;
+    case 'tel':
+      v = v.slice(0,11);
+      if (v.length <= 10)
+        v = v.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3');
+      else
+        v = v.replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3');
+      break;
+    case 'cep':
+      v = v.slice(0,8);
+      v = v.replace(/(\d{5})(\d{0,3})/, '$1-$2');
+      break;
+    case 'data':
+      v = v.slice(0,8);
+      v = v.replace(/(\d{2})(\d)/, '$1/$2')
+           .replace(/(\d{2})(\d)/, '$1/$2');
+      break;
+    case 'valor':
+      el.value = el.value.replace(/[^\d,\.]/g, '');
+      return;
+  }
+  el.value = v;
+}
+
+/* Converte dd/mm/aaaa → aaaa-mm-dd para o banco */
+function toISO(d) {
+  if (!d) return null;
+  if (d.includes('-')) return d; // já está em ISO
+  const [dd, mm, aaaa] = d.split('/');
+  if (!dd || !mm || !aaaa || aaaa.length < 4) return null;
+  return `${aaaa}-${mm}-${dd}`;
+}
+
+/* Converte aaaa-mm-dd → dd/mm/aaaa para exibição */
+const fd = d => d ? d.slice(0,10).split('-').reverse().join('/') : '—';
+const fm = v => v ? 'R$ ' + parseFloat(v).toFixed(2).replace('.', ',') : '—';
+const bc = s => ({ Ativo:'ba', Inativo:'bi', Pendente:'bp', Encerrado:'be', Vigente:'bv' }[s] || 'bi');
 const gv  = id => (document.getElementById(id)?.value || '').trim();
 const sv  = (id, v) => { const e = document.getElementById(id); if (e) e.value = v ?? ''; };
 const clr = ids => ids.forEach(i => sv(i, ''));
@@ -29,26 +78,22 @@ const PG = {
 const flt = { ap:'todos', ct:'todos' };
 const eid = { ap:null, em:null, ct:null };
 let drId  = null;
-let _ems  = [];   // cache empresas para selects
-let _aps  = [];   // cache aprendizes para selects
+let _ems  = [];
+let _aps  = [];
 
 /* ── Fetch helpers ── */
 async function api(method, path, body) {
-  const opts = {
-    method,
-    headers: { 'Content-Type': 'application/json' },
-  };
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
   if (body) opts.body = JSON.stringify(body);
-  const res = await fetch(API + path, opts);
+  const res  = await fetch(API + path, opts);
   const data = await res.json();
   if (!res.ok) throw new Error(data.erro || 'Erro na requisição');
   return data;
 }
-
-const GET    = path        => api('GET',    path);
-const POST   = (path, b)   => api('POST',   path, b);
-const PUT    = (path, b)   => api('PUT',    path, b);
-const DELETE = path        => api('DELETE', path);
+const GET    = path      => api('GET',    path);
+const POST   = (path, b) => api('POST',   path, b);
+const PUT    = (path, b) => api('PUT',    path, b);
+const DELETE = path      => api('DELETE', path);
 
 /* ── Alerta global ── */
 function showAlrt(m, tp = 'ok') {
@@ -59,7 +104,6 @@ function showAlrt(m, tp = 'ok') {
   setTimeout(() => e.style.display = 'none', 3500);
 }
 
-/* ── Loading ── */
 function setLoading(tbId, cols, msg = 'Carregando…') {
   const tb = document.getElementById(tbId);
   if (tb) tb.innerHTML = `<tr><td colspan="${cols}" style="text-align:center;padding:20px;color:var(--mu);font-size:.83rem">${msg}</td></tr>`;
@@ -95,7 +139,6 @@ function sp(el, g, v) {
   g === 'ap' ? rAp() : rCt();
 }
 
-/* ── Popula <select> ── */
 function popSel(id, arr, key, ph = 'Selecione') {
   const s = document.getElementById(id);
   if (!s) return;
@@ -111,9 +154,9 @@ function popSel(id, arr, key, ph = 'Selecione') {
 async function updCnt() {
   try {
     const d = await GET('/dashboard');
-    document.getElementById('c-ap').textContent = d.ativos + d.pendentes;
-    document.getElementById('c-em').textContent = d.empresas;
-    document.getElementById('c-ct').textContent = d.contratos;
+    document.getElementById('sb-ap').textContent = d.ativos + d.pendentes;
+    document.getElementById('sb-em').textContent = d.empresas;
+    document.getElementById('sb-ct').textContent = d.contratos;
   } catch (_) {}
 }
 
@@ -122,29 +165,22 @@ async function updCnt() {
 ════════════════════════════ */
 async function rDash() {
   try {
-    const [kpis, aps] = await Promise.all([
-      GET('/dashboard'),
-      GET('/aprendizes'),
-    ]);
+    const [kpis, aps] = await Promise.all([GET('/dashboard'), GET('/aprendizes')]);
     document.getElementById('kv-at').textContent = kpis.ativos;
     document.getElementById('kv-em').textContent = kpis.empresas;
     document.getElementById('kv-pe').textContent = kpis.pendentes;
     document.getElementById('kv-ct').textContent = kpis.contratos;
-
     const tb = document.getElementById('dash-ap');
     const recent = aps.slice(0, 5);
     tb.innerHTML = recent.length
-      ? recent.map(a => `
-          <tr style="cursor:pointer" onclick="oDr(${a.id})">
-            <td><strong>${a.nom}</strong></td>
-            <td style="font-family:monospace;font-size:.76rem;color:var(--mu)">${a.mat || '—'}</td>
-            <td>${a.emp_nom || '—'}</td>
-            <td><span class="badge ${bc(a.sta)}">${a.sta || '—'}</span></td>
-          </tr>`).join('')
+      ? recent.map(a => `<tr style="cursor:pointer" onclick="oDr(${a.id})">
+          <td><strong>${a.nom}</strong></td>
+          <td style="font-family:monospace;font-size:.76rem;color:var(--mu)">${a.mat || '—'}</td>
+          <td>${a.emp_nom || '—'}</td>
+          <td><span class="badge ${bc(a.sta)}">${a.sta || '—'}</span></td>
+        </tr>`).join('')
       : `<tr><td colspan="4"><div class="empty"><div class="ei">📋</div><p>Nenhum aprendiz cadastrado.</p></div></td></tr>`;
-  } catch (err) {
-    showAlrt('Erro ao carregar dashboard.', 'er');
-  }
+  } catch (err) { showAlrt('Erro ao carregar dashboard.', 'er'); }
 }
 
 /* ════════════════════════════
@@ -152,23 +188,19 @@ async function rDash() {
 ════════════════════════════ */
 async function oAp(id) {
   eid.ap = id || null;
-  // Carrega empresas para o select
   _ems = await GET('/empresas').catch(() => []);
   popSel('a-emp', _ems, 'nom', 'Selecione a empresa');
-
   if (id) {
     document.getElementById('ap-tt').textContent = 'Editar Aprendiz';
     try {
       const a = await GET('/aprendizes/' + id);
-      ['nom','mat','ins','mod','esc','tur','sta','end','num','bai','tre','cel','ttr','out','res','par','trm','emp','obs'].forEach(k => sv('a-' + k, a[k]));
-      sv('a-nas', a.nas ? a.nas.slice(0,10) : '');
-      sv('a-cni', a.cni ? a.cni.slice(0,10) : '');
-      sv('a-cnf', a.cnf ? a.cnf.slice(0,10) : '');
+      ['nom','mat','ins','mod','esc','tur','sta','logr','num','bai','res','par','trm','emp','obs','cpf','cpr','cep','out'].forEach(k => sv('a-' + k, a[k]));
+      sv('a-tre', a.tre); sv('a-cel', a.cel); sv('a-ttr', a.ttr);
+      sv('a-nas', fd(a.nas)); sv('a-cni', fd(a.cni)); sv('a-cnf', fd(a.cnf));
     } catch (err) { showAlrt('Erro ao carregar aprendiz.', 'er'); return; }
   } else {
     document.getElementById('ap-tt').textContent = 'Cadastrar Aprendiz';
-    const flds = ['nom','mat','ins','nas','mod','esc','tur','sta','end','num','bai','tre','cel','ttr','out','res','par','cni','cnf','trm','emp','obs'];
-    clr(flds.map(f => 'a-' + f));
+    clr(['a-nom','a-mat','a-ins','a-cpf','a-nas','a-mod','a-esc','a-tur','a-logr','a-num','a-bai','a-cep','a-tre','a-cel','a-ttr','a-out','a-res','a-par','a-cpr','a-cni','a-cnf','a-trm','a-obs']);
     sv('a-sta', 'Ativo');
   }
   ov('ov-ap');
@@ -178,21 +210,18 @@ async function sAp() {
   const nom = gv('a-nom');
   if (!nom) { showAlrt('Informe o nome do aprendiz.', 'er'); return; }
   const body = {
-    nom, mat:gv('a-mat'), ins:gv('a-ins'), nas:gv('a-nas')||null,
-    mod:gv('a-mod'), esc:gv('a-esc'), tur:gv('a-tur'), sta:gv('a-sta'),
-    logr:gv('a-logr'), num:gv('a-num'), bai:gv('a-bai'), tre:gv('a-tre'),
-    cel:gv('a-cel'), ttr:gv('a-ttr'), out:gv('a-out'), res:gv('a-res'),
-    par:gv('a-par'), cni:gv('a-cni')||null, cnf:gv('a-cnf')||null,
+    nom, mat:gv('a-mat'), ins:gv('a-ins'), cpf:gv('a-cpf'),
+    nas:toISO(gv('a-nas')), mod:gv('a-mod'), esc:gv('a-esc'),
+    tur:gv('a-tur'), sta:gv('a-sta'), logr:gv('a-logr'),
+    num:gv('a-num'), bai:gv('a-bai'), cep:gv('a-cep'),
+    tre:gv('a-tre'), cel:gv('a-cel'), ttr:gv('a-ttr'),
+    out:gv('a-out'), res:gv('a-res'), par:gv('a-par'), cpr:gv('a-cpr'),
+    cni:toISO(gv('a-cni')), cnf:toISO(gv('a-cnf')),
     trm:gv('a-trm'), emp:gv('a-emp')||null, obs:gv('a-obs'),
   };
   try {
-    if (eid.ap) {
-      await PUT('/aprendizes/' + eid.ap, body);
-      showAlrt('Aprendiz atualizado.');
-    } else {
-      await POST('/aprendizes', body);
-      showAlrt('Aprendiz cadastrado com sucesso!');
-    }
+    if (eid.ap) { await PUT('/aprendizes/' + eid.ap, body); showAlrt('Aprendiz atualizado.'); }
+    else        { await POST('/aprendizes', body); showAlrt('Aprendiz cadastrado com sucesso!'); }
     cov('ov-ap'); rAp(); rDash(); updCnt();
   } catch (err) { showAlrt(err.message, 'er'); }
 }
@@ -206,10 +235,7 @@ async function rAp() {
     if (flt.ap !== 'todos') params.set('sta', flt.ap);
     const list = await GET('/aprendizes?' + params);
     const tb = document.getElementById('tb-ap');
-    if (!list.length) {
-      tb.innerHTML = `<tr><td colspan="10"><div class="empty"><div class="ei">👤</div><p>Nenhum aprendiz encontrado.</p></div></td></tr>`;
-      return;
-    }
+    if (!list.length) { tb.innerHTML = `<tr><td colspan="10"><div class="empty"><div class="ei">👤</div><p>Nenhum aprendiz encontrado.</p></div></td></tr>`; return; }
     tb.innerHTML = list.map(a => `
       <tr>
         <td><strong>${a.nom}</strong></td>
@@ -232,10 +258,8 @@ async function rAp() {
 
 async function dAp(id) {
   if (!confirm('Excluir este aprendiz?')) return;
-  try {
-    await DELETE('/aprendizes/' + id);
-    showAlrt('Aprendiz excluído.'); rAp(); rDash(); updCnt();
-  } catch (err) { showAlrt(err.message, 'er'); }
+  try { await DELETE('/aprendizes/' + id); showAlrt('Aprendiz excluído.'); rAp(); rDash(); updCnt(); }
+  catch (err) { showAlrt(err.message, 'er'); }
 }
 
 /* ════════════════════════════
@@ -247,11 +271,11 @@ async function oEm(id) {
     document.getElementById('em-tt').textContent = 'Editar Empresa';
     try {
       const e = await GET('/empresas/' + id);
-      ['nom','cnj','res','end','num','bai','tel','eml','obs'].forEach(k => sv('e-' + k, e[k]));
+      ['nom','cnj','res','logr','num','bai','cep','tel','eml','obs'].forEach(k => sv('e-' + k, e[k]));
     } catch (err) { showAlrt('Erro ao carregar empresa.', 'er'); return; }
   } else {
     document.getElementById('em-tt').textContent = 'Cadastrar Empresa';
-    clr(['e-nom','e-cnj','e-res','e-end','e-num','e-bai','e-tel','e-eml','e-obs']);
+    clr(['e-nom','e-cnj','e-res','e-logr','e-num','e-bai','e-cep','e-tel','e-eml','e-obs']);
   }
   ov('ov-em');
 }
@@ -259,15 +283,10 @@ async function oEm(id) {
 async function sEm() {
   const nom = gv('e-nom');
   if (!nom) { showAlrt('Informe o nome da empresa.', 'er'); return; }
-  const body = { nom, cnj:gv('e-cnj'), res:gv('e-res'), logr:gv('e-logr'), num:gv('e-num'), bai:gv('e-bai'), tel:gv('e-tel'), eml:gv('e-eml'), obs:gv('e-obs') };
+  const body = { nom, cnj:gv('e-cnj'), res:gv('e-res'), logr:gv('e-logr'), num:gv('e-num'), bai:gv('e-bai'), cep:gv('e-cep'), tel:gv('e-tel'), eml:gv('e-eml'), obs:gv('e-obs') };
   try {
-    if (eid.em) {
-      await PUT('/empresas/' + eid.em, body);
-      showAlrt('Empresa atualizada.');
-    } else {
-      await POST('/empresas', body);
-      showAlrt('Empresa cadastrada!');
-    }
+    if (eid.em) { await PUT('/empresas/' + eid.em, body); showAlrt('Empresa atualizada.'); }
+    else        { await POST('/empresas', body); showAlrt('Empresa cadastrada!'); }
     cov('ov-em'); rEm(); rDash(); updCnt();
   } catch (err) { showAlrt(err.message, 'er'); }
 }
@@ -278,11 +297,7 @@ async function rEm() {
     const q = gv('q-em');
     const list = await GET('/empresas' + (q ? '?q=' + encodeURIComponent(q) : ''));
     const tb = document.getElementById('tb-em');
-    if (!list.length) {
-      tb.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="ei">🏢</div><p>Nenhuma empresa cadastrada.</p></div></td></tr>`;
-      return;
-    }
-    // Busca contagem de aprendizes por empresa
+    if (!list.length) { tb.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="ei">🏢</div><p>Nenhuma empresa cadastrada.</p></div></td></tr>`; return; }
     const aps = await GET('/aprendizes');
     tb.innerHTML = list.map(e => {
       const c = aps.filter(a => a.emp == e.id).length;
@@ -303,19 +318,17 @@ async function rEm() {
 
 async function dEm(id) {
   if (!confirm('Excluir esta empresa?')) return;
-  try {
-    await DELETE('/empresas/' + id);
-    showAlrt('Empresa excluída.'); rEm(); rDash(); updCnt();
-  } catch (err) { showAlrt(err.message, 'er'); }
+  try { await DELETE('/empresas/' + id); showAlrt('Empresa excluída.'); rEm(); rDash(); updCnt(); }
+  catch (err) { showAlrt(err.message, 'er'); }
 }
 
 /* ════════════════════════════
-   CONTRATOS
+   CONTRATOS  (IDs: ct-ap, ct-em, ct-ini…)
 ════════════════════════════ */
 async function _popCtSelects() {
   [_aps, _ems] = await Promise.all([GET('/aprendizes'), GET('/empresas')]);
-  const sAp = document.getElementById('c-ap');
-  const sEm = document.getElementById('c-em');
+  const sAp = document.getElementById('ct-ap');
+  const sEm = document.getElementById('ct-em');
   sAp.innerHTML = '<option value="">Selecione o aprendiz</option>';
   sEm.innerHTML = '<option value="">Selecione a empresa</option>';
   _aps.forEach(a => { const o = document.createElement('option'); o.value=a.id; o.textContent=a.nom; sAp.appendChild(o); });
@@ -326,8 +339,8 @@ async function abrirCt() {
   eid.ct = null;
   document.getElementById('ct-tt').textContent = 'Registrar Contrato';
   await _popCtSelects();
-  clr(['c-ini','c-fim','c-hor','c-int','c-ch','c-sal','c-obs']);
-  sv('c-sta', 'Vigente');
+  clr(['ct-ini','ct-fim','ct-hor','ct-int','ct-ch','ct-sal','ct-obs']);
+  sv('ct-sta', 'Vigente');
   ov('ov-ct');
 }
 
@@ -339,18 +352,32 @@ async function oCt(id) {
     const list = await GET('/contratos');
     const c = list.find(x => x.id === id);
     if (c) {
-      ['ap','em','sta','hor','int','ch','sal','obs'].forEach(k => sv('c-' + k, c[k]));
-      sv('c-ini', c.ini ? c.ini.slice(0,10) : '');
-      sv('c-fim', c.fim ? c.fim.slice(0,10) : '');
+      sv('ct-ap',  c.ap);
+      sv('ct-em',  c.em);
+      sv('ct-sta', c.sta);
+      sv('ct-hor', c.hor);
+      sv('ct-int', c.int);
+      sv('ct-ch',  c.ch);
+      sv('ct-sal', c.sal);
+      sv('ct-obs', c.obs);
+      sv('ct-ini', fd(c.ini));
+      sv('ct-fim', fd(c.fim));
     }
   } catch (_) {}
   ov('ov-ct');
 }
 
 async function sCt() {
-  const ap = gv('c-ap'), em = gv('c-em');
+  const ap = gv('ct-ap'), em = gv('ct-em');
   if (!ap || !em) { showAlrt('Selecione aprendiz e empresa.', 'er'); return; }
-  const body = { ap, em, ini:gv('c-ini')||null, fim:gv('c-fim')||null, sta:gv('c-sta'), hor:gv('c-hor'), int:gv('c-int'), ch:gv('c-ch')||null, sal:gv('c-sal')||null, obs:gv('c-obs') };
+  const body = {
+    ap, em,
+    ini: toISO(gv('ct-ini')), fim: toISO(gv('ct-fim')),
+    sta: gv('ct-sta'), hor: gv('ct-hor'), int: gv('ct-int'),
+    ch:  gv('ct-ch')||null,
+    sal: gv('ct-sal') ? parseFloat(gv('ct-sal').replace(',','.')) : null,
+    obs: gv('ct-obs'),
+  };
   try {
     if (eid.ct) { await PUT('/contratos/' + eid.ct, body); showAlrt('Contrato atualizado.'); }
     else        { await POST('/contratos', body); showAlrt('Contrato registrado!'); }
@@ -367,10 +394,7 @@ async function rCt() {
     if (flt.ct !== 'todos') params.set('sta', flt.ct);
     const list = await GET('/contratos?' + params);
     const tb = document.getElementById('tb-ct');
-    if (!list.length) {
-      tb.innerHTML = `<tr><td colspan="10"><div class="empty"><div class="ei">📋</div><p>Nenhum contrato registrado.</p></div></td></tr>`;
-      return;
-    }
+    if (!list.length) { tb.innerHTML = `<tr><td colspan="10"><div class="empty"><div class="ei">📋</div><p>Nenhum contrato registrado.</p></div></td></tr>`; return; }
     tb.innerHTML = list.map(c => `
       <tr>
         <td><strong>${c.ap_nom}</strong></td>
@@ -389,10 +413,8 @@ async function rCt() {
 
 async function dCt(id) {
   if (!confirm('Excluir este contrato?')) return;
-  try {
-    await DELETE('/contratos/' + id);
-    showAlrt('Contrato excluído.'); rCt(); rDash(); updCnt();
-  } catch (err) { showAlrt(err.message, 'er'); }
+  try { await DELETE('/contratos/' + id); showAlrt('Contrato excluído.'); rCt(); rDash(); updCnt(); }
+  catch (err) { showAlrt(err.message, 'er'); }
 }
 
 /* ════════════════════════════
@@ -408,7 +430,7 @@ async function sUn() {
   const ap = gv('u-ap');
   if (!ap) { showAlrt('Selecione o aprendiz.', 'er'); return; }
   try {
-    await POST('/uniformes', { ap, dat:gv('u-dat')||null, qtd:gv('u-qtd')||1, ass:gv('u-ass') });
+    await POST('/uniformes', { ap, dat:toISO(gv('u-dat')), qtd:gv('u-qtd')||1, ass:gv('u-ass') });
     showAlrt('Entrega registrada!'); cov('ov-un'); rUn();
   } catch (err) { showAlrt(err.message, 'er'); }
 }
@@ -426,9 +448,7 @@ async function rUn() {
   } catch (err) { showAlrt('Erro ao carregar uniformes.', 'er'); }
 }
 
-async function dUn(id) {
-  await DELETE('/uniformes/' + id); rUn();
-}
+async function dUn(id) { await DELETE('/uniformes/' + id); rUn(); }
 
 /* ════════════════════════════
    FÉRIAS
@@ -443,7 +463,7 @@ async function sFe() {
   const ap = gv('f-ap');
   if (!ap) { showAlrt('Selecione o aprendiz.', 'er'); return; }
   try {
-    await POST('/ferias', { ap, ini:gv('f-ini')||null, fim:gv('f-fim')||null, obs:gv('f-obs') });
+    await POST('/ferias', { ap, ini:toISO(gv('f-ini')), fim:toISO(gv('f-fim')), obs:gv('f-obs') });
     showAlrt('Férias registradas!'); cov('ov-fe'); rFe();
   } catch (err) { showAlrt(err.message, 'er'); }
 }
@@ -476,7 +496,7 @@ async function sLi() {
   const ap = gv('l-ap');
   if (!ap) { showAlrt('Selecione o aprendiz.', 'er'); return; }
   try {
-    await POST('/licencas', { ap, ini:gv('l-ini')||null, fim:gv('l-fim')||null, mot:gv('l-mot') });
+    await POST('/licencas', { ap, ini:toISO(gv('l-ini')), fim:toISO(gv('l-fim')), mot:gv('l-mot') });
     showAlrt('Licença registrada!'); cov('ov-li'); rLi();
   } catch (err) { showAlrt(err.message, 'er'); }
 }
@@ -504,14 +524,18 @@ async function oDr(id) {
   try {
     const [a, cts, uns, fes, lis] = await Promise.all([
       GET('/aprendizes/' + id),
-      GET('/contratos?ap=' + id),
-      GET('/uniformes?ap=' + id),
-      GET('/ferias?ap=' + id),
-      GET('/licencas?ap=' + id),
+      GET('/contratos'),
+      GET('/uniformes'),
+      GET('/ferias'),
+      GET('/licencas'),
     ]);
+    // filtrar pelo aprendiz
+    const mcts = cts.filter(c => c.ap == id);
+    const muns = uns.filter(u => u.ap == id);
+    const mfes = fes.filter(f => f.ap == id);
+    const mlis = lis.filter(l => l.ap == id);
 
     document.getElementById('dr-ttl').textContent = a.nom;
-
     const mini = (rows, ths, fn) => `
       <table class="ct">
         <thead><tr>${ths.map(h => `<th>${h}</th>`).join('')}</tr></thead>
@@ -528,20 +552,22 @@ async function oDr(id) {
         <div class="dg2">
           <div class="di"><label>Matrícula</label><span>${a.mat || '—'}</span></div>
           <div class="di"><label>Inscrição</label><span>${a.ins || '—'}</span></div>
+          <div class="di"><label>CPF</label><span>${a.cpf || '—'}</span></div>
           <div class="di"><label>Dt. Nascimento</label><span>${fd(a.nas)}</span></div>
           <div class="di"><label>Modalidade</label><span>${a.mod || '—'}</span></div>
           <div class="di"><label>Escolaridade</label><span>${a.esc || '—'}</span></div>
           <div class="di"><label>Turno</label><span>${a.tur || '—'}</span></div>
-          <div class="di"><label>Turma</label><span>${a.trm || '—'}</span></div>
           <div class="di"><label>Empresa</label><span>${a.emp_nom || '—'}</span></div>
           <div class="di"><label>Curso Início</label><span>${fd(a.cni)}</span></div>
           <div class="di"><label>Curso Término</label><span>${fd(a.cnf)}</span></div>
+          <div class="di"><label>Turma</label><span>${a.trm || '—'}</span></div>
         </div>
       </div>
       <div class="ds">
         <div class="dst">Contatos e Endereço</div>
         <div class="dg2">
           <div class="di full"><label>Endereço</label><span>${[a.logr,a.num,a.bai].filter(Boolean).join(', ') || '—'}</span></div>
+          <div class="di"><label>CEP</label><span>${a.cep || '—'}</span></div>
           <div class="di"><label>Tel. Residencial</label><span>${a.tre || '—'}</span></div>
           <div class="di"><label>Celular</label><span>${a.cel || '—'}</span></div>
           <div class="di"><label>Tel. Trab./Resp.</label><span>${a.ttr || '—'}</span></div>
@@ -553,20 +579,21 @@ async function oDr(id) {
         <div class="dg2">
           <div class="di"><label>Nome</label><span>${a.res || '—'}</span></div>
           <div class="di"><label>Parentesco</label><span>${a.par || '—'}</span></div>
+          <div class="di"><label>CPF Responsável</label><span>${a.cpr || '—'}</span></div>
         </div>
       </div>
       <div class="ds"><div class="dst">Contratos</div>
-        ${mini(cts,['Início','Término','Horário','Salário','C.H.','Status'],
-          c => `<tr><td>${fd(c.ini)}</td><td>${fd(c.fim)}</td><td>${c.hor||'—'}</td><td>${fm(c.sal)}</td><td>${c.ch?c.ch+'h':'—'}</td><td><span class="badge ${bc(c.sta)}">${c.sta}</span></td></tr>`)}
+        ${mini(mcts,['Empresa','Início','Término','Horário','Salário','Status'],
+          c => `<tr><td>${c.em_nom}</td><td>${fd(c.ini)}</td><td>${fd(c.fim)}</td><td>${c.hor||'—'}</td><td>${fm(c.sal)}</td><td><span class="badge ${bc(c.sta)}">${c.sta}</span></td></tr>`)}
       </div>
       <div class="ds"><div class="dst">Uniformes</div>
-        ${mini(uns,['Data','Qtd','Assinatura'],u=>`<tr><td>${fd(u.dat)}</td><td>${u.qtd||'—'}</td><td>${u.ass||'—'}</td></tr>`)}
+        ${mini(muns,['Data','Qtd','Assinatura'],u=>`<tr><td>${fd(u.dat)}</td><td>${u.qtd||'—'}</td><td>${u.ass||'—'}</td></tr>`)}
       </div>
       <div class="ds"><div class="dst">Férias</div>
-        ${mini(fes,['Início','Fim','Observação'],f=>`<tr><td>${fd(f.ini)}</td><td>${fd(f.fim)}</td><td>${f.obs||'—'}</td></tr>`)}
+        ${mini(mfes,['Início','Fim','Observação'],f=>`<tr><td>${fd(f.ini)}</td><td>${fd(f.fim)}</td><td>${f.obs||'—'}</td></tr>`)}
       </div>
       <div class="ds"><div class="dst">Licenças Médicas</div>
-        ${mini(lis,['Início','Fim','Motivo'],l=>`<tr><td>${fd(l.ini)}</td><td>${fd(l.fim)}</td><td>${l.mot||'—'}</td></tr>`)}
+        ${mini(mlis,['Início','Fim','Motivo'],l=>`<tr><td>${fd(l.ini)}</td><td>${fd(l.fim)}</td><td>${l.mot||'—'}</td></tr>`)}
       </div>
       ${a.obs ? `<div class="ds"><div class="dst">Observações</div><p style="font-size:.84rem;color:var(--i2);line-height:1.65">${a.obs}</p></div>` : ''}
     `;
@@ -575,7 +602,6 @@ async function oDr(id) {
 }
 
 function efd() { cdov(); setTimeout(() => oAp(drId), 150); }
-function setDrawer(id) { oDr(id); }
 
 /* ── Init ── */
 rDash();
