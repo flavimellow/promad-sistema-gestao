@@ -15,6 +15,12 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+// ── Log de todas as requisições ──
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  next();
+});
+
 // ── Servir frontend estático ──
 app.use(express.static(path.join(__dirname, '../frontend')));
 
@@ -42,6 +48,7 @@ app.get('/api/dashboard', async (req, res) => {
       contratos: parseInt(contratos.rows[0].count),
     });
   } catch (err) {
+    console.error('Erro dashboard:', err.message);
     res.status(500).json({ erro: 'Erro ao carregar dashboard.' });
   }
 });
@@ -49,11 +56,18 @@ app.get('/api/dashboard', async (req, res) => {
 // ── Health check ──
 app.get('/api/health', async (req, res) => {
   try {
-    await pool.query('SELECT 1');
-    res.json({ status: 'ok', db: 'conectado' });
+    const result = await pool.query('SELECT NOW() as agora');
+    res.json({ status: 'ok', db: 'conectado', hora: result.rows[0].agora });
   } catch (err) {
-    res.status(500).json({ status: 'erro', db: 'desconectado' });
+    console.error('Health check falhou:', err.message);
+    res.status(500).json({ status: 'erro', db: 'desconectado', detalhe: err.message });
   }
+});
+
+// ── Erro global ──
+app.use((err, req, res, next) => {
+  console.error('Erro global:', err.message);
+  res.status(500).json({ erro: err.message });
 });
 
 // ── SPA fallback ──
@@ -62,7 +76,14 @@ app.get('*', (req, res) => {
 });
 
 // ── Start ──
-app.listen(PORT, () => {
-  console.log(`\n🟢 PROMAD rodando em http://localhost:${PORT}`);
-  console.log(`   Ambiente: ${process.env.NODE_ENV || 'development'}\n`);
+app.listen(PORT, async () => {
+  console.log(`\n🟢 PROMAD rodando na porta ${PORT}`);
+  console.log(`   Ambiente  : ${process.env.NODE_ENV || 'development'}`);
+  console.log(`   DATABASE_URL definida: ${!!process.env.DATABASE_URL}`);
+  try {
+    await pool.query('SELECT NOW()');
+    console.log('   ✅ Banco de dados: CONECTADO\n');
+  } catch (err) {
+    console.error('   ❌ Banco de dados: ERRO -', err.message, '\n');
+  }
 });
