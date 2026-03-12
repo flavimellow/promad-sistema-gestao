@@ -78,6 +78,7 @@ CREATE TABLE IF NOT EXISTS contratos (
   int        VARCHAR(50),
   ch         NUMERIC(5,1),
   sal        NUMERIC(10,2),
+  tipo_ct    VARCHAR(20) DEFAULT 'direto' CHECK (tipo_ct IN ('direto','indireto')),
   obs        TEXT,
   criado_em  TIMESTAMPTZ DEFAULT NOW(),
   atualizado_em TIMESTAMPTZ DEFAULT NOW()

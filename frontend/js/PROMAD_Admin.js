@@ -73,6 +73,7 @@ const PG = {
   uniformes:  { l:'Uniformes',   b:'Controle'    },
   ferias:     { l:'Férias',      b:'Previsão'    },
   licencas:   { l:'Lic. Médica', b:'Saúde'       },
+  financeiro: { l:'Financeiro',  b:'Gestão Financeira' },
 };
 
 const flt = { ap:'todos', ct:'todos' };
@@ -121,7 +122,8 @@ function nav(p) {
   });
   document.getElementById('tp-pg').textContent = PG[p].l;
   document.getElementById('tp-bd').textContent = PG[p].b;
-  ({ dashboard:rDash, aprendizes:rAp, empresas:rEm, contratos:rCt, uniformes:rUn, ferias:rFe, licencas:rLi })[p]?.();
+  ({ dashboard:rDash, aprendizes:rAp, empresas:rEm, contratos:rCt,
+     uniformes:rUn, ferias:rFe, licencas:rLi, financeiro:finInit })[p]?.();
 }
 
 /* ════════════════════════════
@@ -341,6 +343,7 @@ async function abrirCt() {
   await _popCtSelects();
   clr(['ct-ini','ct-fim','ct-hor','ct-int','ct-ch','ct-sal','ct-obs']);
   sv('ct-sta', 'Vigente');
+  sv('ct-tipo', 'direto');
   ov('ov-ct');
 }
 
@@ -352,16 +355,17 @@ async function oCt(id) {
     const list = await GET('/contratos');
     const c = list.find(x => x.id === id);
     if (c) {
-      sv('ct-ap',  c.ap);
-      sv('ct-em',  c.em);
-      sv('ct-sta', c.sta);
-      sv('ct-hor', c.hor);
-      sv('ct-int', c.int);
-      sv('ct-ch',  c.ch);
-      sv('ct-sal', c.sal);
-      sv('ct-obs', c.obs);
-      sv('ct-ini', fd(c.ini));
-      sv('ct-fim', fd(c.fim));
+      sv('ct-ap',   c.ap);
+      sv('ct-em',   c.em);
+      sv('ct-sta',  c.sta);
+      sv('ct-tipo', c.tipo_ct || 'direto');
+      sv('ct-hor',  c.hor);
+      sv('ct-int',  c.int);
+      sv('ct-ch',   c.ch);
+      sv('ct-sal',  c.sal);
+      sv('ct-obs',  c.obs);
+      sv('ct-ini',  fd(c.ini));
+      sv('ct-fim',  fd(c.fim));
     }
   } catch (_) {}
   ov('ov-ct');
@@ -376,6 +380,7 @@ async function sCt() {
     sta: gv('ct-sta'), hor: gv('ct-hor'), int: gv('ct-int'),
     ch:  gv('ct-ch')||null,
     sal: gv('ct-sal') ? parseFloat(gv('ct-sal').replace(',','.')) : null,
+    tipo_ct: gv('ct-tipo') || 'direto',
     obs: gv('ct-obs'),
   };
   try {
@@ -602,6 +607,237 @@ async function oDr(id) {
 }
 
 function efd() { cdov(); setTimeout(() => oAp(drId), 150); }
+
+
+/* ════════════════════════════
+   MÓDULO FINANCEIRO
+════════════════════════════ */
+const fmR = v => v != null ? 'R$ ' + parseFloat(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : 'R$ 0,00';
+let finTabAtual = 'direto';
+let finCompAtual = null;
+let finCobId = null;
+let _comps = [];
+
+// ── Nav já está definido acima, apenas hook financeiro ──
+
+async function finInit() {
+  try {
+    _comps = await GET('/financeiro/competencias');
+    const sel = document.getElementById('fin-comp');
+    sel.innerHTML = '<option value="">Selecione o mês…</option>';
+    _comps.forEach(c => {
+      const o = document.createElement('option');
+      o.value = c.id; o.textContent = c.descricao;
+      sel.appendChild(o);
+    });
+    // Selecionar competência mais recente automaticamente
+    if (_comps.length) {
+      sel.value = _comps[0].id;
+      finCarregar();
+    }
+  } catch (err) { showAlrt('Erro ao carregar competências.','er'); }
+}
+
+async function finCarregar() {
+  const comp_id = document.getElementById('fin-comp').value;
+  finCompAtual = comp_id || null;
+  const btnGerar = document.getElementById('btn-fin-gerar');
+  const btnD = document.getElementById('btn-exp-d');
+  const btnI = document.getElementById('btn-exp-i');
+  btnGerar.disabled = !comp_id;
+  btnD.disabled = !comp_id;
+  btnI.disabled = !comp_id;
+  if (!comp_id) {
+    document.getElementById('fin-kpis').style.display = 'none';
+    document.getElementById('fin-corpo').innerHTML = '';
+    return;
+  }
+  await finAtualizarKpis();
+  await finRenderTabela();
+}
+
+async function finAtualizarKpis() {
+  if (!finCompAtual) return;
+  try {
+    const k = await GET('/financeiro/kpis/' + finCompAtual);
+    document.getElementById('fin-kpis').style.display = 'flex';
+    document.getElementById('fkv-total').textContent    = fmR(k.total_geral);
+    document.getElementById('fkv-direto').textContent   = fmR(k.total_direto);
+    document.getElementById('fkv-indireto').textContent = fmR(k.total_indireto);
+    document.getElementById('fkv-aps').textContent      = k.total_aprendizes;
+    document.getElementById('sb-fin').textContent       = k.total_aprendizes;
+  } catch(_) {}
+}
+
+function finTab(el, tipo) {
+  el.closest('.fps').querySelectorAll('.pill').forEach(p => p.classList.remove('on'));
+  el.classList.add('on');
+  finTabAtual = tipo;
+  finRenderTabela();
+}
+
+async function finRenderTabela() {
+  if (!finCompAtual) return;
+  const corpo = document.getElementById('fin-corpo');
+  corpo.innerHTML = '<div style="text-align:center;padding:30px;color:var(--mu);font-size:.83rem">Carregando…</div>';
+  try {
+    const resumo = await GET('/financeiro/resumo/' + finCompAtual + '?tipo=' + finTabAtual);
+    if (!resumo.length) {
+      corpo.innerHTML = `<div class="card"><div class="empty"><div class="ei">💰</div>
+        <p>Nenhuma cobrança gerada para ${finTabAtual === 'direto' ? 'contratos diretos' : 'contratos indiretos'}.<br>
+        Clique em <strong>⚡ Gerar Cobranças</strong> para criar automaticamente.</p></div></div>`;
+      return;
+    }
+
+    const cursoLabel = finTabAtual === 'indireto' ? 'Custo Mensal' : 'Curso';
+    let html = '';
+
+    resumo.forEach(emp => {
+      const totalFmt = fmR(emp.total_geral);
+      html += `
+        <div class="card" style="margin-bottom:18px">
+          <div class="chd">
+            <div>
+              <span class="cttl">${emp.em_nom}</span>
+              ${emp.em_cnj ? `<span style="font-size:.73rem;color:var(--mu);margin-left:8px;font-family:monospace">${emp.em_cnj}</span>` : ''}
+            </div>
+            <div style="display:flex;align-items:center;gap:12px">
+              <span class="badge ba">${emp.qtd_aprendizes} aprendiz${emp.qtd_aprendizes!=1?'es':''}</span>
+              <span style="font-weight:700;color:var(--g5);font-size:.95rem">${totalFmt}</span>
+            </div>
+          </div>
+          <table>
+            <thead><tr>
+              <th>Aprendiz</th><th>Início</th><th>Fim</th>
+              <th>Uniforme</th><th>${cursoLabel}</th><th>Mat. Didático</th>
+              <th>Total</th><th>NF</th><th></th>
+            </tr></thead>
+            <tbody>`;
+
+      emp.aprendizes.forEach(ap => {
+        const staBadge = ap.sta_pgto === 'pago' ? 'ba' : ap.sta_pgto === 'atrasado' ? 'be' : 'bp';
+        html += `<tr>
+          <td><strong>${ap.ap_nom}</strong></td>
+          <td style="font-size:.78rem">${ap.ct_ini ? new Date(ap.ct_ini).toLocaleDateString('pt-BR') : '—'}</td>
+          <td style="font-size:.78rem">${ap.ct_fim ? new Date(ap.ct_fim).toLocaleDateString('pt-BR') : '—'}</td>
+          <td style="text-align:right">${ap.vl_uniforme > 0 ? fmR(ap.vl_uniforme) : '—'}</td>
+          <td style="text-align:right">${fmR(ap.vl_curso)}</td>
+          <td style="text-align:right">${ap.vl_material > 0 ? fmR(ap.vl_material) : '—'}</td>
+          <td style="text-align:right;font-weight:700;color:var(--g5)">${fmR(ap.vl_total)}</td>
+          <td style="font-size:.75rem;color:var(--mu)">${ap.nf_numero || '—'}</td>
+          <td><div class="ag">
+            <span class="badge ${staBadge}" style="font-size:.65rem">${ap.sta_pgto}</span>
+            <button class="btn btn-s btn-sm btn-ic" onclick="finEditarCob(${ap.id})">✏</button>
+          </div></td>
+        </tr>`;
+      });
+
+      html += `
+            </tbody>
+            <tfoot><tr>
+              <td colspan="6" style="text-align:right;font-weight:700;font-size:.82rem;color:var(--mu)">Total da empresa:</td>
+              <td style="text-align:right;font-weight:700;color:var(--g5);font-size:.9rem">${totalFmt}</td>
+              <td colspan="2"></td>
+            </tr></tfoot>
+          </table>
+        </div>`;
+    });
+
+    // Totalizador geral
+    const totalGeral = resumo.reduce((s, e) => s + parseFloat(e.total_geral||0), 0);
+    const totalAps   = resumo.reduce((s, e) => s + parseInt(e.qtd_aprendizes||0), 0);
+    html += `<div class="card" style="background:var(--g6);color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-weight:700;font-size:.95rem">TOTAL GERAL — ${totalAps} aprendizes</span>
+      <span style="font-weight:700;font-size:1.2rem">${fmR(totalGeral)}</span>
+    </div>`;
+
+    corpo.innerHTML = html;
+  } catch (err) { corpo.innerHTML = '<div class="card"><p style="color:red">Erro ao carregar: '+err.message+'</p></div>'; }
+}
+
+// ── Nova competência ──
+function finNovaComp() {
+  const now = new Date();
+  sv('comp-mes', now.getMonth() + 1);
+  sv('comp-ano', now.getFullYear());
+  ov('ov-comp');
+}
+
+async function finSalvarComp() {
+  const mes = parseInt(gv('comp-mes'));
+  const ano = parseInt(gv('comp-ano'));
+  if (!mes || !ano) { showAlrt('Informe mês e ano.','er'); return; }
+  try {
+    const c = await POST('/financeiro/competencias', { mes, ano });
+    showAlrt('Competência criada: ' + c.descricao);
+    cov('ov-comp');
+    await finInit();
+    document.getElementById('fin-comp').value = c.id;
+    finCarregar();
+  } catch (err) { showAlrt(err.message,'er'); }
+}
+
+// ── Gerar cobranças ──
+async function finGerar() {
+  if (!finCompAtual) return;
+  const comp = _comps.find(c => c.id == finCompAtual);
+  if (!confirm('Gerar cobranças para ' + (comp?.descricao||'') + '?\nApenas contratos sem cobrança gerada serão processados.')) return;
+  try {
+    showAlrt('Gerando cobranças…');
+    const r = await POST('/financeiro/gerar', { comp_id: finCompAtual });
+    showAlrt(`✅ ${r.geradas} cobranças geradas, ${r.ignoradas} já existiam.`);
+    await finAtualizarKpis();
+    await finRenderTabela();
+  } catch (err) { showAlrt(err.message,'er'); }
+}
+
+// ── Exportar Excel ──
+function finExportar(tipo) {
+  if (!finCompAtual) return;
+  window.open('/api/financeiro/exportar/' + finCompAtual + '?tipo=' + tipo, '_blank');
+}
+
+// ── Editar cobrança ──
+async function finEditarCob(id) {
+  finCobId = id;
+  try {
+    const list = await GET('/financeiro/cobrancas?comp_id=' + finCompAtual);
+    const c = list.find(x => x.id === id);
+    if (!c) return;
+    document.getElementById('cob-tt').textContent = 'Editar — ' + c.ap_nom;
+    document.getElementById('cob-info').innerHTML =
+      `<strong>${c.em_nom}</strong> · Contrato: ${c.ct_ini ? new Date(c.ct_ini).toLocaleDateString('pt-BR') : '—'} até ${c.ct_fim ? new Date(c.ct_fim).toLocaleDateString('pt-BR') : '—'}`;
+    sv('cob-curso', parseFloat(c.vl_curso||0).toFixed(2));
+    sv('cob-unif',  parseFloat(c.vl_uniforme||0).toFixed(2));
+    sv('cob-mat',   parseFloat(c.vl_material||0).toFixed(2));
+    sv('cob-carga', c.carga_horaria||'');
+    sv('cob-nf',    c.nf_numero||'');
+    sv('cob-sta',   c.sta_pgto||'pendente');
+    sv('cob-dtpg',  c.dt_pgto ? new Date(c.dt_pgto).toLocaleDateString('pt-BR') : '');
+    sv('cob-obs',   c.obs||'');
+    ov('ov-cob');
+  } catch (err) { showAlrt('Erro ao carregar cobrança.','er'); }
+}
+
+async function finSalvarCob() {
+  if (!finCobId) return;
+  try {
+    await PUT('/financeiro/cobrancas/' + finCobId, {
+      vl_curso:      parseFloat(gv('cob-curso'))||0,
+      vl_uniforme:   parseFloat(gv('cob-unif'))||0,
+      vl_material:   parseFloat(gv('cob-mat'))||0,
+      carga_horaria: gv('cob-carga')||null,
+      nf_numero:     gv('cob-nf')||null,
+      sta_pgto:      gv('cob-sta')||'pendente',
+      dt_pgto:       toISO(gv('cob-dtpg'))||null,
+      obs:           gv('cob-obs')||null,
+    });
+    showAlrt('Cobrança atualizada.');
+    cov('ov-cob');
+    await finAtualizarKpis();
+    await finRenderTabela();
+  } catch (err) { showAlrt(err.message,'er'); }
+}
 
 /* ── Init ── */
 rDash();

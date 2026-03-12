@@ -29,9 +29,11 @@ router.post('/', async (req, res) => {
   try {
     const f = req.body;
     const { rows } = await pool.query(
-      `INSERT INTO contratos (ap,em,ini,fim,sta,hor,int,ch,sal,obs)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
-      [f.ap,f.em,f.ini||null,f.fim||null,f.sta||'Vigente',f.hor||null,f.int||null,f.ch||null,f.sal||null,f.obs||null]
+      `INSERT INTO contratos (ap,em,ini,fim,sta,hor,int,ch,sal,tipo_ct,obs)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
+      [f.ap,f.em,f.ini||null,f.fim||null,f.sta||'Vigente',
+       f.hor||null,f.int||null,f.ch||null,f.sal||null,
+       f.tipo_ct||'direto',f.obs||null]
     );
     res.status(201).json(rows[0]);
   } catch (err) { res.status(500).json({ erro: 'Erro ao criar contrato.' }); }
@@ -41,9 +43,11 @@ router.put('/:id', async (req, res) => {
   try {
     const f = req.body;
     const { rows } = await pool.query(
-      `UPDATE contratos SET ap=$1,em=$2,ini=$3,fim=$4,sta=$5,hor=$6,int=$7,ch=$8,sal=$9,obs=$10
-       WHERE id=$11 RETURNING *`,
-      [f.ap,f.em,f.ini||null,f.fim||null,f.sta||'Vigente',f.hor||null,f.int||null,f.ch||null,f.sal||null,f.obs||null,req.params.id]
+      `UPDATE contratos SET ap=$1,em=$2,ini=$3,fim=$4,sta=$5,hor=$6,int=$7,ch=$8,sal=$9,tipo_ct=$10,obs=$11
+       WHERE id=$12 RETURNING *`,
+      [f.ap,f.em,f.ini||null,f.fim||null,f.sta||'Vigente',
+       f.hor||null,f.int||null,f.ch||null,f.sal||null,
+       f.tipo_ct||'direto',f.obs||null,req.params.id]
     );
     if (!rows.length) return res.status(404).json({ erro: 'Não encontrado.' });
     res.json(rows[0]);

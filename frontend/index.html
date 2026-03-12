@@ -23,6 +23,8 @@
   <div class="sbi" onclick="nav('uniformes')"><span>👕</span><span>Uniformes</span></div>
   <div class="sbi" onclick="nav('ferias')"><span>🏖️</span><span>Férias</span></div>
   <div class="sbi" onclick="nav('licencas')"><span>🏥</span><span>Lic. Médica</span></div>
+  <span class="sb-sec">Financeiro</span>
+  <div class="sbi" onclick="nav('financeiro')"><span>💰</span><span>Financeiro</span><span class="sb-cnt" id="sb-fin">0</span></div>
   <div class="sb-foot">PROMAD · Juiz de Fora – MG<br>v1.0 · 2025</div>
 </aside>
 
@@ -127,8 +129,104 @@
       <div class="card"><table><thead><tr><th>Aprendiz</th><th>Período Início</th><th>Período Fim</th><th>Motivo</th><th></th></tr></thead><tbody id="tb-li"></tbody></table></div>
     </div>
 
+
+    <!-- FINANCEIRO -->
+    <div class="page" id="pg-financeiro">
+      <div class="ph"><h1>Gestão Financeira</h1><p>Cobranças mensais por empresa</p></div>
+
+      <!-- Seletor de competência -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="chd" style="flex-wrap:wrap;gap:10px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <label style="font-size:.82rem;font-weight:600;color:var(--mu)">Competência:</label>
+            <select id="fin-comp" onchange="finCarregar()" style="padding:6px 10px;border-radius:6px;border:1px solid var(--bd);font-size:.85rem">
+              <option value="">Selecione o mês…</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-s btn-sm" onclick="finNovaComp()">＋ Nova Competência</button>
+            <button class="btn btn-p btn-sm" onclick="finGerar()" id="btn-fin-gerar" disabled>⚡ Gerar Cobranças</button>
+            <button class="btn btn-s btn-sm" onclick="finExportar('direto')"   id="btn-exp-d"  disabled>📥 Excel Diretos</button>
+            <button class="btn btn-s btn-sm" onclick="finExportar('indireto')" id="btn-exp-i"  disabled>📥 Excel Indiretos</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPIs financeiros -->
+      <div class="krow" id="fin-kpis" style="display:none">
+        <div class="kpi g">  <div class="kl">Total a Receber</div><div class="kv" id="fkv-total">R$ 0</div><div class="ks">competência atual</div></div>
+        <div class="kpi go"><div class="kl">Contratos Diretos</div><div class="kv" id="fkv-direto">R$ 0</div><div class="ks">empresas diversas</div></div>
+        <div class="kpi am"><div class="kl">Contratos Indiretos</div><div class="kv" id="fkv-indireto">R$ 0</div><div class="ks">contratos indiretos</div></div>
+        <div class="kpi gr"><div class="kl">Aprendizes</div><div class="kv" id="fkv-aps">0</div><div class="ks">com cobrança gerada</div></div>
+      </div>
+
+      <!-- Tabs direto/indireto -->
+      <div class="fps" style="margin-top:16px">
+        <div class="pill on" onclick="finTab(this,'direto')">Contratos Diretos</div>
+        <div class="pill" onclick="finTab(this,'indireto')">Contratos Indiretos</div>
+      </div>
+
+      <!-- Tabela por empresa -->
+      <div id="fin-corpo"></div>
+    </div>
+
   </div>
 </div>
+
+<!-- MODAL NOVA COMPETÊNCIA -->
+<div class="ov" id="ov-comp" onclick="ovc(event,'ov-comp')">
+<div class="modal modal-sm">
+  <div class="mhd"><span class="mttl">Nova Competência</span><button class="mcl" onclick="cov('ov-comp')">✕</button></div>
+  <div class="mbdy">
+    <div class="fg">
+      <div class="fld"><label>Mês</label>
+        <select id="comp-mes">
+          <option value="1">Janeiro</option><option value="2">Fevereiro</option>
+          <option value="3">Março</option><option value="4">Abril</option>
+          <option value="5">Maio</option><option value="6">Junho</option>
+          <option value="7">Julho</option><option value="8">Agosto</option>
+          <option value="9">Setembro</option><option value="10">Outubro</option>
+          <option value="11">Novembro</option><option value="12">Dezembro</option>
+        </select>
+      </div>
+      <div class="fld"><label>Ano</label><input id="comp-ano" type="number" placeholder="2026" value="2026"></div>
+    </div>
+  </div>
+  <div class="mft"><button class="btn btn-s" onclick="cov('ov-comp')">Cancelar</button><button class="btn btn-p" onclick="finSalvarComp()">Criar</button></div>
+</div></div>
+
+<!-- MODAL EDITAR COBRANÇA -->
+<div class="ov" id="ov-cob" onclick="ovc(event,'ov-cob')">
+<div class="modal modal-sm">
+  <div class="mhd"><span class="mttl" id="cob-tt">Editar Cobrança</span><button class="mcl" onclick="cov('ov-cob')">✕</button></div>
+  <div class="mbdy">
+    <div id="cob-info" style="font-size:.82rem;color:var(--mu);margin-bottom:12px"></div>
+    <div class="fg">
+      <div class="fld"><label>Custo Mensal / Curso (R$)</label><input id="cob-curso" type="number" step="0.01"></div>
+      <div class="fld"><label>Uniforme (R$)</label><input id="cob-unif"  type="number" step="0.01"></div>
+      <div class="fld"><label>Mat. Didático (R$)</label><input id="cob-mat"   type="number" step="0.01"></div>
+      <div class="fld"><label>Carga Horária</label>
+        <select id="cob-carga">
+          <option value="">—</option>
+          <option value="20h">20h/semana</option>
+          <option value="30h">30h/semana</option>
+          <option value="outro">Outro</option>
+        </select>
+      </div>
+      <div class="fld"><label>Nº NF</label><input id="cob-nf" placeholder="Ex: NF 301"></div>
+      <div class="fld"><label>Status Pagamento</label>
+        <select id="cob-sta">
+          <option value="pendente">Pendente</option>
+          <option value="pago">Pago</option>
+          <option value="atrasado">Atrasado</option>
+        </select>
+      </div>
+      <div class="fld"><label>Data Pagamento</label><input id="cob-dtpg" placeholder="dd/mm/aaaa" maxlength="10" oninput="msk(this,'data')"></div>
+      <div class="fld ff"><label>Observação</label><textarea id="cob-obs"></textarea></div>
+    </div>
+  </div>
+  <div class="mft"><button class="btn btn-s" onclick="cov('ov-cob')">Cancelar</button><button class="btn btn-p" onclick="finSalvarCob()">Salvar</button></div>
+</div></div>
 
 <!-- MODAL APRENDIZ -->
 <div class="ov" id="ov-ap" onclick="ovc(event,'ov-ap')">
@@ -215,6 +313,7 @@
       <div class="fld"><label>Início</label><input id="ct-ini" placeholder="dd/mm/aaaa" maxlength="10" oninput="msk(this,'data')"></div>
       <div class="fld"><label>Término</label><input id="ct-fim" placeholder="dd/mm/aaaa" maxlength="10" oninput="msk(this,'data')"></div>
       <div class="fld"><label>Status</label><select id="ct-sta"><option>Vigente</option><option>Encerrado</option></select></div>
+      <div class="fld"><label>Tipo de Contrato</label><select id="ct-tipo"><option value="direto">Direto</option><option value="indireto">Indireto</option></select></div>
       <div class="fld"><label>Horário</label><input id="ct-hor" placeholder="08:00–14:00"></div>
       <div class="fld"><label>Intervalo</label><input id="ct-int" placeholder="30 min"></div>
       <div class="fld"><label>C.H. (h/sem)</label><input type="number" id="ct-ch" placeholder="20"></div>

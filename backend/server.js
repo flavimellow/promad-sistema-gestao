@@ -31,6 +31,8 @@ app.use('/api/contratos',  require('./routes/contratos'));
 app.use('/api/uniformes',  require('./routes/uniformes'));
 app.use('/api/ferias',     require('./routes/ferias'));
 app.use('/api/licencas',   require('./routes/licencas'));
+app.use('/api/financeiro', require('./routes/financeiro'));
+app.use('/api/financeiro', require('./routes/financeiro_export'));
 
 // ── Dashboard KPIs ──
 app.get('/api/dashboard', async (req, res) => {
