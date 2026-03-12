@@ -71,6 +71,17 @@ body {
   letter-spacing: 1px;
 }
 
+.sb-logo-img {
+  width: 100%;
+  max-width: 160px;
+  height: auto;
+  display: block;
+  margin-bottom: 4px;
+  /* fundo preto da logo → transparente com mix-blend */
+  mix-blend-mode: lighten;
+  filter: drop-shadow(0 1px 4px rgba(0,0,0,.4));
+}
+
 .sb-sub {
   font-size: .6rem;
   color: rgba(255,255,255,.28);
