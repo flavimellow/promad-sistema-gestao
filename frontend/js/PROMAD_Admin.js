@@ -344,6 +344,7 @@ async function abrirCt() {
   clr(['ct-ini','ct-fim','ct-hor','ct-int','ct-ch','ct-sal','ct-obs']);
   sv('ct-sta', 'Vigente');
   sv('ct-tipo', 'direto');
+  finToggleCusto('direto');
   ov('ov-ct');
 }
 
@@ -359,6 +360,8 @@ async function oCt(id) {
       sv('ct-em',   c.em);
       sv('ct-sta',  c.sta);
       sv('ct-tipo', c.tipo_ct || 'direto');
+      sv('ct-cme',  c.custo_mensal || '');
+      finToggleCusto(c.tipo_ct || 'direto');
       sv('ct-hor',  c.hor);
       sv('ct-int',  c.int);
       sv('ct-ch',   c.ch);
@@ -380,8 +383,9 @@ async function sCt() {
     sta: gv('ct-sta'), hor: gv('ct-hor'), int: gv('ct-int'),
     ch:  gv('ct-ch')||null,
     sal: gv('ct-sal') ? parseFloat(gv('ct-sal').replace(',','.')) : null,
-    tipo_ct: gv('ct-tipo') || 'direto',
-    obs: gv('ct-obs'),
+    tipo_ct:      gv('ct-tipo') || 'direto',
+    custo_mensal: gv('ct-cme') ? parseFloat(gv('ct-cme').replace(',','.')) : null,
+    obs:          gv('ct-obs'),
   };
   try {
     if (eid.ct) { await PUT('/contratos/' + eid.ct, body); showAlrt('Contrato atualizado.'); }
@@ -404,9 +408,11 @@ async function rCt() {
       <tr>
         <td><strong>${c.ap_nom}</strong></td>
         <td>${c.em_nom}</td>
+        <td><span class="badge ${c.tipo_ct === 'indireto' ? 'be' : 'ba'}" style="font-size:.68rem">${c.tipo_ct || 'direto'}</span></td>
         <td>${fd(c.ini)}</td><td>${fd(c.fim)}</td>
-        <td>${c.hor || '—'}</td><td>${c.int || '—'}</td>
-        <td>${fm(c.sal)}</td><td>${c.ch ? c.ch + 'h' : '—'}</td>
+        <td style="font-size:.78rem">${c.sal ? fm(c.sal) : '—'}</td>
+        <td style="font-weight:${c.tipo_ct==='indireto'?'600':'400'};color:${c.tipo_ct==='indireto'?'var(--g5)':'inherit'}">${c.custo_mensal ? fm(c.custo_mensal) : (c.tipo_ct==='direto' ? '<span style="font-size:.73rem;color:var(--mu)">tabela</span>' : '—')}</td>
+        <td>${c.ch ? c.ch + 'h' : '—'}</td>
         <td><span class="badge ${bc(c.sta)}">${c.sta || '—'}</span></td>
         <td><div class="ag">
           <button class="btn btn-s btn-sm btn-ic" onclick="oCt(${c.id})">✏</button>
@@ -619,6 +625,12 @@ let finCobId = null;
 let _comps = [];
 
 // ── Nav já está definido acima, apenas hook financeiro ──
+
+/* Mostra campo Custo Mensal só para contratos indiretos */
+function finToggleCusto(tipo) {
+  const fld = document.getElementById('fld-custo-mensal');
+  if (fld) fld.style.display = tipo === 'indireto' ? '' : 'none';
+}
 
 async function finInit() {
   try {

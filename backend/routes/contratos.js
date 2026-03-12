@@ -1,6 +1,5 @@
 // ═══════════════════════════════════════════
 //  PROMAD · Rotas — Contratos
-//  Arquivo: backend/routes/contratos.js
 // ═══════════════════════════════════════════
 const express = require('express');
 const router  = express.Router();
@@ -18,7 +17,7 @@ router.get('/', async (req, res) => {
     `;
     const params = [];
     if (sta && sta !== 'todos') { params.push(sta); sql += ` AND c.sta=$${params.length}`; }
-    if (q) { params.push(`%${q}%`); sql += ` AND (a.nom ILIKE $${params.length} OR e.nom ILIKE $${params.length})`; }
+    if (q)  { params.push(`%${q}%`); sql += ` AND (a.nom ILIKE $${params.length} OR e.nom ILIKE $${params.length})`; }
     sql += ' ORDER BY c.criado_em DESC';
     const { rows } = await pool.query(sql, params);
     res.json(rows);
@@ -29,25 +28,29 @@ router.post('/', async (req, res) => {
   try {
     const f = req.body;
     const { rows } = await pool.query(
-      `INSERT INTO contratos (ap,em,ini,fim,sta,hor,int,ch,sal,tipo_ct,obs)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
-      [f.ap,f.em,f.ini||null,f.fim||null,f.sta||'Vigente',
-       f.hor||null,f.int||null,f.ch||null,f.sal||null,
-       f.tipo_ct||'direto',f.obs||null]
+      `INSERT INTO contratos (ap,em,ini,fim,sta,hor,int,ch,sal,custo_mensal,tipo_ct,obs)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
+      [f.ap, f.em, f.ini||null, f.fim||null, f.sta||'Vigente',
+       f.hor||null, f.int||null, f.ch||null,
+       f.sal||null, f.custo_mensal||null,
+       f.tipo_ct||'direto', f.obs||null]
     );
     res.status(201).json(rows[0]);
-  } catch (err) { res.status(500).json({ erro: 'Erro ao criar contrato.' }); }
+  } catch (err) { res.status(500).json({ erro: 'Erro ao criar contrato: ' + err.message }); }
 });
 
 router.put('/:id', async (req, res) => {
   try {
     const f = req.body;
     const { rows } = await pool.query(
-      `UPDATE contratos SET ap=$1,em=$2,ini=$3,fim=$4,sta=$5,hor=$6,int=$7,ch=$8,sal=$9,tipo_ct=$10,obs=$11
-       WHERE id=$12 RETURNING *`,
-      [f.ap,f.em,f.ini||null,f.fim||null,f.sta||'Vigente',
-       f.hor||null,f.int||null,f.ch||null,f.sal||null,
-       f.tipo_ct||'direto',f.obs||null,req.params.id]
+      `UPDATE contratos SET
+        ap=$1,em=$2,ini=$3,fim=$4,sta=$5,hor=$6,int=$7,
+        ch=$8,sal=$9,custo_mensal=$10,tipo_ct=$11,obs=$12
+       WHERE id=$13 RETURNING *`,
+      [f.ap, f.em, f.ini||null, f.fim||null, f.sta||'Vigente',
+       f.hor||null, f.int||null, f.ch||null,
+       f.sal||null, f.custo_mensal||null,
+       f.tipo_ct||'direto', f.obs||null, req.params.id]
     );
     if (!rows.length) return res.status(404).json({ erro: 'Não encontrado.' });
     res.json(rows[0]);

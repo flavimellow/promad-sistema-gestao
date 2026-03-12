@@ -147,17 +147,26 @@ router.post('/gerar', async (req, res) => {
       // Usar tipo_ct do contrato
       const tipo = ct.tipo_ct || 'direto';
 
-      // Calcular custo do curso
+      // Calcular custo do curso/mensal
       let vl_curso = 0;
       let carga = null;
       if (tipo === 'direto') {
+        // Direto: taxa fixa do curso (tabela de preços)
         vl_curso = P['curso_direto'] || 209.90;
       } else {
-        const ch = parseFloat(ct.ch) || 0;
-        carga = ch <= 20 ? '20h' : ch <= 30 ? '30h' : 'outro';
-        if (carga === '20h')      vl_curso = P['indireto_20h'] || 1594.10;
-        else if (carga === '30h') vl_curso = P['indireto_30h'] || 2211.70;
-        else                      vl_curso = parseFloat(ct.sal) || 0;
+        // Indireto: custo_mensal informado no contrato (prioritário)
+        // ou calculado pela carga horária como fallback
+        if (ct.custo_mensal && parseFloat(ct.custo_mensal) > 0) {
+          vl_curso = parseFloat(ct.custo_mensal);
+          const ch = parseFloat(ct.ch) || 0;
+          carga = ch <= 20 ? '20h' : ch <= 30 ? '30h' : 'outro';
+        } else {
+          const ch = parseFloat(ct.ch) || 0;
+          carga = ch <= 20 ? '20h' : ch <= 30 ? '30h' : 'outro';
+          if (carga === '20h')      vl_curso = P['indireto_20h'] || 1594.10;
+          else if (carga === '30h') vl_curso = P['indireto_30h'] || 2211.70;
+          else                      vl_curso = 0; // precisa informar manualmente
+        }
       }
 
       // Verificar se é 1º mês do contrato → cobrar material didático

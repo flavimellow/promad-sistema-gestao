@@ -96,7 +96,7 @@
         <div class="pill" onclick="sp(this,'ct','Vigente')">Vigentes</div>
         <div class="pill" onclick="sp(this,'ct','Encerrado')">Encerrados</div>
       </div>
-      <div class="card"><table><thead><tr><th>Aprendiz</th><th>Empresa</th><th>Início</th><th>Término</th><th>Horário</th><th>Intervalo</th><th>Salário</th><th>C.H.</th><th>Status</th><th></th></tr></thead><tbody id="tb-ct"></tbody></table></div>
+      <div class="card"><table><thead><tr><th>Aprendiz</th><th>Empresa</th><th>Tipo</th><th>Início</th><th>Término</th><th>Sal. CLT</th><th>Custo Mensal</th><th>C.H.</th><th>Status</th><th></th></tr></thead><tbody id="tb-ct"></tbody></table></div>
     </div>
 
     <!-- UNIFORMES -->
@@ -313,12 +313,15 @@
       <div class="fld"><label>Início</label><input id="ct-ini" placeholder="dd/mm/aaaa" maxlength="10" oninput="msk(this,'data')"></div>
       <div class="fld"><label>Término</label><input id="ct-fim" placeholder="dd/mm/aaaa" maxlength="10" oninput="msk(this,'data')"></div>
       <div class="fld"><label>Status</label><select id="ct-sta"><option>Vigente</option><option>Encerrado</option></select></div>
-      <div class="fld"><label>Tipo de Contrato</label><select id="ct-tipo"><option value="direto">Direto</option><option value="indireto">Indireto</option></select></div>
+      <div class="fld"><label>Tipo de Contrato</label><select id="ct-tipo" onchange="finToggleCusto(this.value)"><option value="direto">Direto</option><option value="indireto">Indireto</option></select></div>
       <div class="fld"><label>Horário</label><input id="ct-hor" placeholder="08:00–14:00"></div>
       <div class="fld"><label>Intervalo</label><input id="ct-int" placeholder="30 min"></div>
       <div class="fld"><label>C.H. (h/sem)</label><input type="number" id="ct-ch" placeholder="20"></div>
     </div>
-    <div class="fg"><div class="fld"><label>Salário (R$)</label><input id="ct-sal" placeholder="0,00" oninput="msk(this,'valor')"></div></div>
+    <div class="fg">
+      <div class="fld"><label>Salário CLT (R$)<span style="font-size:.7rem;color:var(--mu);margin-left:4px">aprendiz</span></label><input id="ct-sal" placeholder="0,00" oninput="msk(this,'valor')"></div>
+      <div class="fld" id="fld-custo-mensal"><label>Custo Mensal (R$)<span style="font-size:.7rem;color:var(--mu);margin-left:4px">cobrado da empresa</span></label><input id="ct-cme" placeholder="0,00" oninput="msk(this,'valor')"></div>
+    </div>
     <div class="fsec">Alterações no Contrato</div>
     <div class="fld"><label>Observações / Alterações</label><textarea id="ct-obs" placeholder="Prorrogações, ajustes, aditivos…"></textarea></div>
   </div>
